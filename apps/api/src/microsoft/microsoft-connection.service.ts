@@ -1,4 +1,4 @@
-import { isMicrosoftConfigured, signsInWithMicrosoft } from "@crm/auth";
+import { isMicrosoftConfigured } from "@crm/auth";
 import { type Db, GoogleSyncStatus, type Prisma } from "@crm/db";
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { ActivityStampService } from "../crm/activity-stamp.service";
@@ -15,7 +15,10 @@ import {
 const PURGE_TIMEOUT_MS = 60_000;
 
 export type SourceStatus = {
+	id: string;
 	source: MicrosoftSyncSource;
+	mailboxAddress: string | null;
+	displayName: string | null;
 	connected: boolean;
 	status: GoogleSyncStatus | null;
 	lastSyncedAt: string | null;
@@ -24,11 +27,14 @@ export type SourceStatus = {
 };
 
 export type ConnectionStatus = {
-	configured: boolean;
-	linked: boolean;
-	required: boolean;
+	id: string;
 	hasRefreshToken: boolean;
 	sources: SourceStatus[];
+};
+
+export type MicrosoftStatus = {
+	configured: boolean;
+	connections: ConnectionStatus[];
 };
 
 @Injectable()
@@ -42,60 +48,65 @@ export class MicrosoftConnectionService {
 		private readonly stamp: ActivityStampService,
 	) {}
 
-	async status(userId: string): Promise<ConnectionStatus> {
+	async status(userId: string): Promise<MicrosoftStatus> {
 		await this.onConnected(userId);
 
-		const [granted, rows, hasRefreshToken, accounts] = await Promise.all([
-			this.tokens.grantedScopes(userId, MICROSOFT_PROVIDER_ID),
+		const [rows, accounts] = await Promise.all([
 			this.state.listForUser(userId, MICROSOFT_SYNC_SOURCES),
-			this.tokens.hasRefreshToken(userId, MICROSOFT_PROVIDER_ID),
-			this.tokens.signInAccounts(userId),
+			this.tokens.accountsForUser(userId, MICROSOFT_PROVIDER_ID),
 		]);
-
-		const bySource = new Map(rows.map((row) => [row.source, row]));
-
-		const sources = MICROSOFT_SYNC_SOURCES.map((source): SourceStatus => {
-			const row = bySource.get(source);
-
-			return {
-				source,
-				connected: granted.has(SCOPE_FOR_SOURCE[source]),
-				status: row?.status ?? null,
-				lastSyncedAt: row?.lastSyncedAt?.toISOString() ?? null,
-				lastError: row?.lastError ?? null,
-				autoCreate: row?.autoCreate ?? false,
-			};
-		});
 
 		return {
 			configured: isMicrosoftConfigured(),
-			linked:
-				accounts.some(
-					(account) => account.providerId === MICROSOFT_PROVIDER_ID,
-				) && sources.some((source) => source.connected),
-			required: signsInWithMicrosoft(accounts),
-			hasRefreshToken,
-			sources,
+			connections: await Promise.all(
+				accounts.map(async (account): Promise<ConnectionStatus> => {
+					const granted = await this.tokens.grantedScopes(account.id);
+					return {
+						id: account.id,
+						hasRefreshToken: Boolean(account.refreshToken),
+						sources: rows
+							.filter((row) => row.authAccountId === account.id)
+							.map(
+								(row): SourceStatus => ({
+									id: row.id,
+									source: row.source as MicrosoftSyncSource,
+									mailboxAddress: row.mailboxAddress,
+									displayName: row.displayName,
+									connected: granted.has(SCOPE_FOR_SOURCE.outlook),
+									status: row.status,
+									lastSyncedAt: row.lastSyncedAt?.toISOString() ?? null,
+									lastError: row.lastError,
+									autoCreate: row.autoCreate,
+								}),
+							),
+					};
+				}),
+			),
 		};
 	}
 
 	async onConnected(userId: string): Promise<void> {
-		const [granted, existing] = await Promise.all([
-			this.tokens.grantedScopes(userId, MICROSOFT_PROVIDER_ID),
-			this.state.listForUser(userId, MICROSOFT_SYNC_SOURCES),
-		]);
-
-		const known = new Set(existing.map((row) => row.source));
-
+		const accounts = await this.tokens.accountsForUser(
+			userId,
+			MICROSOFT_PROVIDER_ID,
+		);
 		const added: string[] = [];
 
-		for (const source of MICROSOFT_SYNC_SOURCES) {
-			if (!granted.has(SCOPE_FOR_SOURCE[source])) continue;
-			if (known.has(source)) continue;
+		for (const account of accounts) {
+			const granted = await this.tokens.grantedScopes(account.id);
+			if (!granted.has(SCOPE_FOR_SOURCE.outlook)) continue;
 
-			await this.state.ensure(userId, source, { autoCreate: false });
+			const row = await this.state.ensure({
+				userId,
+				authAccountId: account.id,
+				source: "outlook",
+				externalId: "primary",
+				autoCreate: false,
+			});
 
-			added.push(source);
+			if (row.createdAt.getTime() === row.updatedAt.getTime()) {
+				added.push(account.id);
+			}
 		}
 
 		if (added.length > 0) {
@@ -123,9 +134,12 @@ export class MicrosoftConnectionService {
 		}
 	}
 
-	async purgeSyncedData(userId: string): Promise<{ purged: number }> {
+	async purgeSyncedData(
+		userId: string,
+		authAccountId: string,
+	): Promise<{ purged: number }> {
 		const mine: Prisma.EmailMessageWhereInput = {
-			syncedByUserId: userId,
+			syncedByMailbox: { userId, authAccountId },
 			outlookMessageId: { not: null },
 		};
 
@@ -158,26 +172,25 @@ export class MicrosoftConnectionService {
 		return { purged };
 	}
 
-	async revoke(userId: string): Promise<{ revoked: boolean }> {
-		for (const source of MICROSOFT_SYNC_SOURCES) {
-			await this.state.remove(userId, source);
-		}
-
-		const revoked = await this.tokens.revoke(userId, MICROSOFT_PROVIDER_ID);
+	async revoke(
+		userId: string,
+		authAccountId: string,
+	): Promise<{ revoked: boolean }> {
+		const revoked = await this.tokens.revoke(userId, authAccountId);
 		return { revoked };
 	}
 
 	async setAutoCreate(
 		userId: string,
-		source: MicrosoftSyncSource,
+		syncId: string,
 		enabled: boolean,
 	): Promise<void> {
-		const row = await this.state.get(userId, source);
-		if (!row) {
-			throw new NotFoundException(`${source} is not connected.`);
+		const row = await this.state.get(syncId);
+		if (!row || row.userId !== userId || row.source !== "outlook") {
+			throw new NotFoundException("That Outlook source is not connected.");
 		}
 
-		await this.state.setAutoCreate(userId, source, enabled);
+		await this.state.setAutoCreate(userId, syncId, enabled);
 	}
 }
 

@@ -32,6 +32,11 @@ is an edited migration that has already been applied.
   verification plus an annual CASA assessment. Going External later means the full
   review — a decision, not a checkbox.
 
+The Google OAuth redirect is `<API_URL>/api/auth/callback/google`. Microsoft uses
+`<API_URL>/api/auth/callback/microsoft`. Zoho uses
+`<API_URL>/api/auth/oauth2/callback/zoho`. These providers are connections only;
+sign-in remains local email/password or SSO.
+
 ## The agent bridge
 
 ```sh

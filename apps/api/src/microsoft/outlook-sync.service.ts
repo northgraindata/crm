@@ -62,7 +62,7 @@ export class OutlookSyncService {
 	async sync(row: MailboxSync): Promise<OutlookSyncOutcome> {
 		const initializedAt = new Date();
 
-		const token = await this.tokens.accessTokenFor(row.userId, "outlook");
+		const token = await this.tokens.accessTokenFor(row);
 
 		if (token.outcome === "not-connected") {
 			return {
@@ -107,6 +107,10 @@ export class OutlookSyncService {
 				status: "failed",
 				reason: "No mailbox address.",
 			};
+		}
+
+		if (mailbox !== row.mailboxAddress) {
+			await this.state.updateIdentity(row.id, { mailboxAddress: mailbox });
 		}
 
 		if (!row.cursor) {

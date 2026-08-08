@@ -4,8 +4,18 @@ import {
 	type MailboxResult,
 } from "../mailbox/mailbox-api.client";
 
-const EVENTS_URL =
-	"https://www.googleapis.com/calendar/v3/calendars/primary/events";
+const CALENDAR_API_URL = "https://www.googleapis.com/calendar/v3";
+
+export type GoogleCalendar = {
+	id?: string;
+	summary?: string;
+	primary?: boolean;
+};
+
+export type CalendarListPage = {
+	items?: GoogleCalendar[];
+	nextPageToken?: string;
+};
 
 export type GoogleEvent = {
 	id?: string;
@@ -61,20 +71,46 @@ export class CalendarClient {
 
 	async listEvents(
 		accessToken: string,
+		calendarId: string,
 		query: EventsQuery,
 	): Promise<MailboxResult<EventsPage>> {
 		const window = query.syncToken
 			? {}
 			: { timeMin: query.timeMin, timeMax: query.timeMax };
 
-		return this.api.get<EventsPage>(EVENTS_URL, accessToken, {
-			singleEvents: true,
-			showDeleted: true,
-			maxResults: query.maxResults ?? 250,
-			syncToken: query.syncToken,
-			pageToken: query.pageToken,
-			...window,
-		});
+		return this.api.get<EventsPage>(
+			`${CALENDAR_API_URL}/calendars/${encodeURIComponent(calendarId)}/events`,
+			accessToken,
+			{
+				singleEvents: true,
+				showDeleted: true,
+				maxResults: query.maxResults ?? 250,
+				syncToken: query.syncToken,
+				pageToken: query.pageToken,
+				...window,
+			},
+		);
+	}
+
+	async calendars(
+		accessToken: string,
+		pageToken?: string,
+	): Promise<MailboxResult<CalendarListPage>> {
+		return this.api.get<CalendarListPage>(
+			`${CALENDAR_API_URL}/users/me/calendarList`,
+			accessToken,
+			{ maxResults: 250, pageToken },
+		);
+	}
+
+	async calendar(
+		accessToken: string,
+		calendarId: string,
+	): Promise<MailboxResult<GoogleCalendar>> {
+		return this.api.get<GoogleCalendar>(
+			`${CALENDAR_API_URL}/calendars/${encodeURIComponent(calendarId)}`,
+			accessToken,
+		);
 	}
 }
 

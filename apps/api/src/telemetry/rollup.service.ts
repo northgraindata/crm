@@ -157,6 +157,9 @@ export class RollupService {
 			cap_cron_secret: isSet("CRON_SECRET"),
 			cap_google_oauth:
 				isSet("GOOGLE_CLIENT_ID") && isSet("GOOGLE_CLIENT_SECRET"),
+			cap_microsoft_oauth:
+				isSet("MICROSOFT_CLIENT_ID") && isSet("MICROSOFT_CLIENT_SECRET"),
+			cap_zoho_oauth: isSet("ZOHO_CLIENT_ID") && isSet("ZOHO_CLIENT_SECRET"),
 			cap_sso_provider: ssoProviders > 0,
 			is_marketing: process.env.IS_MARKETING === "true",
 

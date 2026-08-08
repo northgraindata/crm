@@ -49,7 +49,7 @@ export class GmailSyncService {
 	) {}
 
 	async sync(row: MailboxSync): Promise<GmailSyncOutcome> {
-		const token = await this.tokens.accessTokenFor(row.userId, "gmail");
+		const token = await this.tokens.accessTokenFor(row);
 
 		if (token.outcome === "not-connected") {
 			return {
@@ -86,6 +86,10 @@ export class GmailSyncService {
 				status: "failed",
 				reason: "No mailbox address.",
 			};
+		}
+
+		if (mailbox !== row.mailboxAddress) {
+			await this.state.updateIdentity(row.id, { mailboxAddress: mailbox });
 		}
 
 		if (!row.cursor) {

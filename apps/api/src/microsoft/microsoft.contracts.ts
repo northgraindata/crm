@@ -1,9 +1,11 @@
 import { z } from "zod";
-import { MICROSOFT_SYNC_SOURCES } from "./microsoft.constants";
-
 export const setOutlookAutoCreateInput = z.object({
-	source: z.enum(MICROSOFT_SYNC_SOURCES),
+	syncId: z.string().min(1),
 	enabled: z.boolean(),
+});
+
+export const microsoftConnectionInput = z.object({
+	connectionId: z.string().min(1),
 });
 
 export type SetOutlookAutoCreateInput = z.infer<

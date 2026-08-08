@@ -3,6 +3,8 @@ import "@crm/env/load";
 const DEFAULT_API_URL = "http://localhost:3001";
 const DEFAULT_APP_URL = "http://localhost:3000";
 const DEFAULT_MICROSOFT_TENANT = "common";
+const DEFAULT_ZOHO_ACCOUNTS_URL = "https://accounts.zoho.eu";
+const DEFAULT_ZOHO_MAIL_URL = "https://mail.zoho.eu";
 
 const optional = (key: string): string | undefined => {
 	const value = process.env[key];
@@ -42,6 +44,24 @@ const microsoftCredentials = ():
 	};
 };
 
+const zohoCredentials = ():
+	| {
+			clientId: string;
+			clientSecret: string;
+			accountsUrl: string;
+			mailUrl: string;
+	  }
+	| undefined => {
+	const credentials = pair("ZOHO_CLIENT_ID", "ZOHO_CLIENT_SECRET");
+	if (!credentials) return undefined;
+
+	return {
+		...credentials,
+		accountsUrl: optional("ZOHO_ACCOUNTS_URL") ?? DEFAULT_ZOHO_ACCOUNTS_URL,
+		mailUrl: optional("ZOHO_MAIL_URL") ?? DEFAULT_ZOHO_MAIL_URL,
+	};
+};
+
 const apiUrl =
 	optional("API_URL") ?? optional("BETTER_AUTH_URL") ?? DEFAULT_API_URL;
 
@@ -57,6 +77,7 @@ export const env = {
 	appUrl,
 	google: googleCredentials(),
 	microsoft: microsoftCredentials(),
+	zoho: zohoCredentials(),
 	cookieDomain: optional("AUTH_COOKIE_DOMAIN"),
 	trustedOrigins: [...new Set([...appUrls, apiUrl])],
 	isProduction: process.env.NODE_ENV === "production",
@@ -68,6 +89,10 @@ export function isGoogleConfigured(): boolean {
 
 export function isMicrosoftConfigured(): boolean {
 	return env.microsoft !== undefined;
+}
+
+export function isZohoConfigured(): boolean {
+	return env.zoho !== undefined;
 }
 
 export { apiUrl, appUrl };

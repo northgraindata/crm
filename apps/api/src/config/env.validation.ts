@@ -69,6 +69,22 @@ export class EnvironmentVariables {
 	MICROSOFT_TENANT_ID?: string;
 
 	@IsOptional()
+	@IsString()
+	ZOHO_CLIENT_ID?: string;
+
+	@IsOptional()
+	@IsString()
+	ZOHO_CLIENT_SECRET?: string;
+
+	@IsOptional()
+	@IsUrl()
+	ZOHO_ACCOUNTS_URL?: string;
+
+	@IsOptional()
+	@IsUrl()
+	ZOHO_MAIL_URL?: string;
+
+	@IsOptional()
 	@IsUrl({ require_tld: false })
 	API_URL?: string;
 

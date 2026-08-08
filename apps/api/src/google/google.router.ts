@@ -13,6 +13,7 @@ import { AuthMiddleware } from "../trpc/middlewares/auth.middleware";
 import { ConversationService } from "./conversation.service";
 import {
 	calendarEventInput,
+	googleConnectionInput,
 	setAutoCreateInput,
 	suppressDomainInput,
 	threadInput,
@@ -36,14 +37,20 @@ export class GoogleRouter {
 		return this.connection.status(ctx.user.id);
 	}
 
-	@Mutation()
-	async purgeSyncedData(@Ctx() ctx: AuthedTrpcContext) {
-		return this.connection.purgeSyncedData(ctx.user.id);
+	@Mutation({ input: googleConnectionInput })
+	async purgeSyncedData(
+		@Ctx() ctx: AuthedTrpcContext,
+		@Input("connectionId") connectionId: string,
+	) {
+		return this.connection.purgeSyncedData(ctx.user.id, connectionId);
 	}
 
-	@Mutation()
-	async revokeAccess(@Ctx() ctx: AuthedTrpcContext) {
-		return this.connection.revoke(ctx.user.id);
+	@Mutation({ input: googleConnectionInput })
+	async revokeAccess(
+		@Ctx() ctx: AuthedTrpcContext,
+		@Input("connectionId") connectionId: string,
+	) {
+		return this.connection.revoke(ctx.user.id, connectionId);
 	}
 
 	@Mutation()
@@ -59,7 +66,7 @@ export class GoogleRouter {
 	) {
 		await this.connection.setAutoCreate(
 			ctx.user.id,
-			input.source,
+			input.syncId,
 			input.enabled,
 		);
 		return this.connection.status(ctx.user.id);

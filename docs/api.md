@@ -71,13 +71,13 @@ Onboarding, then `/onboarding/research` for the Context key. Asked server-side e
 request.
 
 - **`getSessionCookie()` decides signed-in**; pages still resolve the real session via
-  `requireMailboxAccess()`.
+  `requireSession()`.
 - **Nothing is cached in a cookie** — both facts revert on a database reset while a
   year-long marker insists the gate passed. Cache in the API if cost ever matters.
 - **Both reads run concurrently**, but order decides which is *asked* — the research
   read is never made while onboarding is open.
 - **An unreachable API fails open** (`unknown` lets the request through).
-- **`/sign-in`, `/grant-access`, `/eve` are ungated.** `/sign-in` is the only path a
+- **`/sign-in` and `/eve` are ungated.** `/sign-in` is the only path a
   stranger may read; `/` joins it only when `IS_MARKETING` is set.
 - **There is no way past the key gate but to answer** — Skip stranded installs, every
   later company sitting `PENDING` with nothing saying so.
@@ -112,15 +112,8 @@ self-hoster's admin cannot redeploy.
   takes `AuthMiddleware` at the *method*, which is what leaves it open. A client
   secret is never read back out.
 - **It is the API's answer, not the app's** — the API serves `/api/auth/*`.
-- **An install with no Google, no Microsoft and no provider says so**, naming the
-  variables; a read that *fails* falls back to offering Google.
-- **A provider hides the social buttons, it does not disable them** —
-  `/sign-in?method=google` and `?method=microsoft` still work, so a mistyped issuer
-  cannot lock an admin out.
-- **Signing in with an IdP does not cost you Gmail.** `needsMailboxGrant` (`@crm/auth`)
-  walls only an account whose sign-in rows are *all* mailbox providers — Google,
-  Microsoft, or both — and none of them granted. `mailboxGrantsNeeded` returns which,
-  so `/grant-access` offers the button they can actually use.
+- **Local email/password is always available.** SSO is optional and provider OAuth is
+  reserved for linking mail and calendar accounts from Settings → Connections.
 - `ALLOWED_SIGN_IN` still decides who gets an account, in
   `databaseHooks.user.create.before`, for SSO sign-ups too.
 - `organizationProvisioning: { disabled: true }` — `ensureWorkspaceMembership` already
@@ -143,14 +136,14 @@ self-hoster's admin cannot redeploy.
 
 ## Two mail providers, one pipeline
 
-`apps/api/src/mailbox` is everything neither Google nor Microsoft owns:
+`apps/api/src/mailbox` is everything no individual provider owns:
 `MailboxApiClient` (bearer GET, and the one place a status code becomes an outcome),
 `SyncStateService` (the `MailboxSync` row), `MailboxTokenService`,
 `MailboxMatchService`, `participants.ts`, `message-text.ts`, and
 `ThreadWriterService`.
 
 - **`ThreadWriterService.store` is the only writer of `EmailThread`, `EmailMessage`
-  and the `EMAIL` activity.** Gmail and Outlook each parse their own wire format down
+  and the `EMAIL` activity.** Gmail, Outlook and Zoho each parse their wire format down
   to one `IncomingMessage` and hand it over; matching, threading, counting and
   stamping happen once. A second copy of that is how a rule like *reply before you
   create a company* comes to be true in one inbox and not the other.
@@ -160,18 +153,20 @@ self-hoster's admin cannot redeploy.
   `internetMessageHeaders` when `$select`ed and not for every message, so Outlook falls
   back to `outlook-conversation:<conversationId>` — threading that still holds inside
   Outlook, just not across to Gmail.
-- **`MailboxSync.source` is the discriminator** — `calendar`, `gmail`, `outlook`. Each
+- **`MailboxSync.source` is the discriminator** — `calendar`, `gmail`, `outlook`,
+  `zoho`. `authAccountId` selects the linked OAuth account and `externalId` selects the
+  provider mailbox or calendar. Each
   provider's module only ever sees its own, and `sync/mailbox-sync.service.ts` is the
   one place that dispatches. One cron, one budget:
   `POST /internal/sync/mailboxes` (`/google` is kept as an alias so an existing
   deployment's cron keeps working).
-- **Gmail is forward-only from a `historyId`, Outlook from a timestamp.** Graph has no
+- **Gmail is forward-only from a `historyId`, Outlook and Zoho from timestamps.** Graph has no
   mailbox-wide delta, so the Outlook cursor is the last `receivedDateTime` seen,
   re-read with a one-second overlap; `rfcMessageId` is unique, so the overlap costs a
   duplicate fetch and never a duplicate row.
-- **Microsoft has no token-revocation endpoint.** `revoke` clears the columns and the
-  UI says the consent itself is removed in the user's Microsoft account. Google's still
-  posts to `oauth2.googleapis.com/revoke` and refuses to clear if that fails.
+- **Disconnect deletes one Better Auth account and cascades its sync rows.** Existing
+  CRM activities stay unless the user chooses delete first. Google revocation is also
+  attempted remotely; other provider consent can be removed in the provider portal.
 
 ## Not every address on a thread is a person
 

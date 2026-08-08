@@ -33,19 +33,21 @@ metadata. The root file's comment has the whole account.
 `OPENROUTER_API_KEY` when the agent is deployed. Everything else has a localhost
 default or is genuinely optional.
 
-**`GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`** are the sign-in button *and* the
-Gmail/Calendar sync — optional, so an SSO-only install needn't create a Google project,
-but **set together or not at all** (`packages/auth/src/env.ts` throws on one).
+**`GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`** enable optional Gmail and Google
+Calendar connections. They are never a sign-in method. Set together or not at all
+(`packages/auth/src/env.ts` throws on one).
 
-**`MICROSOFT_CLIENT_ID` + `MICROSOFT_CLIENT_SECRET`** are the same bargain for Entra
-ID: the other sign-in button *and* the Outlook mail sync, one app registration, the
-same pair rule. **`MICROSOFT_TENANT_ID`** defaults to `common` and is the only one of
-the three that is genuinely optional on its own — set it to your tenant's GUID to
-refuse other tenants at Microsoft instead of at `ALLOWED_SIGN_IN`. There is **no
-Microsoft equivalent of `hd`**: `tenantId` is the whole of it.
+**`MICROSOFT_CLIENT_ID` + `MICROSOFT_CLIENT_SECRET`** enable optional Outlook mail
+connections. **`MICROSOFT_TENANT_ID`** defaults to `common`; set it to a tenant GUID
+to refuse other tenants at Microsoft.
 
-**Neither pair is required, but an install wants one of them or an SSO provider** —
-with none, the sign-in page says so by name rather than rendering nothing.
+**`ZOHO_CLIENT_ID` + `ZOHO_CLIENT_SECRET`** enable optional Zoho Mail connections.
+`ZOHO_ACCOUNTS_URL` and `ZOHO_MAIL_URL` select the Zoho data centre and default to EU.
+
+Provider credentials are optional. Users sign in with local email/password or an
+admin-configured SSO provider, then attach any number of mail and calendar accounts in
+Settings → Connections. OAuth tokens are encrypted by Better Auth. A missing provider
+pair removes that connection button and never prevents sign-in.
 
 **`ALLOWED_SIGN_IN`** — comma-separated whole domains or single addresses (bare
 addresses exist for a solo self-hoster, where `gmail.com` would be an open door). **One
@@ -130,28 +132,20 @@ General — an admin who cannot redeploy cannot set a variable.
 
 ## Mailbox sync
 
-Always on, on whichever social provider is configured, so there is no extra redirect
-URI beyond the sign-in one. Scopes are requested at sign-in and gated by
-`requireMailboxAccess()`, because granular consent lets a user untick one and still
-sign in.
-
-**An SSO rep is not gated** — `needsMailboxGrant` (`@crm/auth`) walls only an account
-whose sign-in rows are *all* mailbox providers. It cannot be "has the scopes": an SSO
-rep has no Google or Microsoft account to grant on, and `revoke()` keeps the `account`
-row, so trying the optional feature and revoking would lock them out. They connect from
-Settings → Connections, posting the same `linkSocial` call.
-
-**One granted mailbox is enough.** A rep with both providers linked who granted Google
-is not asked for Outlook; `mailboxGrantsNeeded` names the ones still outstanding and
-`/grant-access` offers exactly those buttons.
+Mailbox and calendar OAuth is separate from authentication. The sign-in endpoints for
+Google, Microsoft and Zoho are blocked; only authenticated account-linking calls from
+Settings → Connections are accepted. Each Better Auth `Account` owns one or more
+`MailboxSync` rows, so users can attach multiple provider accounts, Google can expose
+multiple calendars, and Zoho can expose multiple mailboxes from one OAuth grant.
+Disconnect and purge operations are scoped to one linked account.
 
 **Microsoft's granted scopes come back fully qualified** —
 `https://graph.microsoft.com/Mail.Read`, not `Mail.Read`. `parseScopes` is the one
 canonicaliser and strips that prefix, so the comparison is against the bare permission
 everywhere.
 
-**Sync is forward-only** — Gmail records the current `historyId` on its first pass and
-imports nothing, Calendar reads from `now`, and Outlook records `now` as its cursor.
+**Sync is forward-only** — Gmail records the current `historyId` on its first pass,
+Calendar reads from `now`, and Outlook and Zoho record `now` as their cursor.
 
 **`CRON_SECRET`** (min 16 chars) guards `POST /internal/sync/mailboxes` and
 `/internal/sync/rates`; both **fail closed when unset**. `/internal/sync/google` is
@@ -190,4 +184,5 @@ is sent. No client is constructed, so there is no queue waiting to flush later.
 - **Cache TTL** — `DEFAULT_TTL_MS` (60s) in `cache.module.ts`; `CACHE_TTL_MS` overrides.
 - **Redis** — optional; without `REDIS_URL` the cache is per-instance in-memory, which
   is wrong for multi-instance.
-- **Sign-in method** — Google and Microsoft are in code; an IdP is a row (SSO, in `api.md`).
+- **Sign-in method** — local email/password is built in; an additional IdP is a row
+  managed through SSO settings.

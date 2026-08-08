@@ -1,9 +1,11 @@
 import { z } from "zod";
-import { GOOGLE_SYNC_SOURCES } from "./google.constants";
-
 export const setAutoCreateInput = z.object({
-	source: z.enum(GOOGLE_SYNC_SOURCES),
+	syncId: z.string().min(1),
 	enabled: z.boolean(),
+});
+
+export const googleConnectionInput = z.object({
+	connectionId: z.string().min(1),
 });
 
 export const suppressDomainInput = z.object({

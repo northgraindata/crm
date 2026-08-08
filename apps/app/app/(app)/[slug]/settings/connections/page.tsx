@@ -14,6 +14,7 @@ import { HydrateClient } from "@/lib/trpc/hydrate";
 import { getServerQueryClient, getServerTrpc } from "@/lib/trpc/server";
 import { GoogleConnection } from "./google-connection";
 import { MicrosoftConnection } from "./microsoft-connection";
+import { ZohoConnection } from "./zoho-connection";
 
 export const metadata: Metadata = {
 	title: "Connections",
@@ -54,6 +55,7 @@ async function Connections({
 		searchParams,
 		queryClient.prefetchQuery(trpc.google.status.queryOptions()),
 		queryClient.prefetchQuery(trpc.microsoft.status.queryOptions()),
+		queryClient.prefetchQuery(trpc.zoho.status.queryOptions()),
 	]);
 
 	const connectError = first(error);
@@ -68,6 +70,10 @@ async function Connections({
 
 				<MicrosoftConnection
 					connectError={failed === "microsoft" ? connectError : undefined}
+				/>
+
+				<ZohoConnection
+					connectError={failed === "zoho" ? connectError : undefined}
 				/>
 			</div>
 		</HydrateClient>

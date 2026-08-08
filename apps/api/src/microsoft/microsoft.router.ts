@@ -10,7 +10,10 @@ import {
 import type { z } from "zod";
 import type { AuthedTrpcContext } from "../trpc/context.types";
 import { AuthMiddleware } from "../trpc/middlewares/auth.middleware";
-import { setOutlookAutoCreateInput } from "./microsoft.contracts";
+import {
+	microsoftConnectionInput,
+	setOutlookAutoCreateInput,
+} from "./microsoft.contracts";
 import { MicrosoftConnectionService } from "./microsoft-connection.service";
 import { MicrosoftSyncService } from "./microsoft-sync.service";
 
@@ -29,14 +32,20 @@ export class MicrosoftRouter {
 		return this.connection.status(ctx.user.id);
 	}
 
-	@Mutation()
-	async purgeSyncedData(@Ctx() ctx: AuthedTrpcContext) {
-		return this.connection.purgeSyncedData(ctx.user.id);
+	@Mutation({ input: microsoftConnectionInput })
+	async purgeSyncedData(
+		@Ctx() ctx: AuthedTrpcContext,
+		@Input("connectionId") connectionId: string,
+	) {
+		return this.connection.purgeSyncedData(ctx.user.id, connectionId);
 	}
 
-	@Mutation()
-	async revokeAccess(@Ctx() ctx: AuthedTrpcContext) {
-		return this.connection.revoke(ctx.user.id);
+	@Mutation({ input: microsoftConnectionInput })
+	async revokeAccess(
+		@Ctx() ctx: AuthedTrpcContext,
+		@Input("connectionId") connectionId: string,
+	) {
+		return this.connection.revoke(ctx.user.id, connectionId);
 	}
 
 	@Mutation()
@@ -52,7 +61,7 @@ export class MicrosoftRouter {
 	) {
 		await this.connection.setAutoCreate(
 			ctx.user.id,
-			input.source,
+			input.syncId,
 			input.enabled,
 		);
 		return this.connection.status(ctx.user.id);

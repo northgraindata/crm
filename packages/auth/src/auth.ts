@@ -2,7 +2,8 @@ import { sso } from "@better-auth/sso";
 import { db } from "@crm/db";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { genericOAuth } from "better-auth/plugins/generic-oauth";
 import { organization } from "better-auth/plugins/organization";
 import { AUTH_COOKIE_PREFIX } from "./cookies";
 import { env } from "./env";
@@ -10,8 +11,7 @@ import { ensureWorkspaceMembership } from "./organization";
 import {
 	GOOGLE_PROVIDER_ID,
 	MICROSOFT_PROVIDER_ID,
-	MICROSOFT_SYNC_SCOPES,
-	SYNC_SCOPES,
+	ZOHO_PROVIDER_ID,
 } from "./scopes";
 import { notifySignedIn } from "./signed-in";
 import {
@@ -25,10 +25,8 @@ const socialProviders: NonNullable<BetterAuthOptions["socialProviders"]> = {};
 if (env.google) {
 	socialProviders.google = {
 		...env.google,
-
-		scope: [...SYNC_SCOPES],
-
 		accessType: "offline",
+		prompt: "select_account consent",
 
 		...(primaryWorkspaceDomain() ? { hd: primaryWorkspaceDomain() } : {}),
 	};
@@ -40,8 +38,6 @@ if (env.microsoft) {
 		clientSecret: env.microsoft.clientSecret,
 		tenantId: env.microsoft.tenantId,
 
-		scope: [...MICROSOFT_SYNC_SCOPES],
-
 		prompt: "select_account",
 
 		disableProfilePhoto: true,
@@ -52,6 +48,63 @@ if (env.microsoft) {
 	};
 }
 
+const zoho = env.zoho;
+const zohoOAuth = genericOAuth({
+	config: zoho
+		? [
+				{
+					providerId: ZOHO_PROVIDER_ID,
+					clientId: zoho.clientId,
+					clientSecret: zoho.clientSecret,
+					authorizationUrl: `${zoho.accountsUrl}/oauth/v2/auth`,
+					tokenUrl: `${zoho.accountsUrl}/oauth/v2/token`,
+					scopes: ["ZohoMail.accounts.READ", "ZohoMail.messages.READ"],
+					accessType: "offline",
+					prompt: "consent",
+					authentication: "post",
+					getUserInfo: async (tokens) => {
+						const response = await fetch(`${zoho.mailUrl}/api/accounts`, {
+							headers: {
+								authorization: `Zoho-oauthtoken ${tokens.accessToken}`,
+							},
+						});
+
+						if (!response.ok) return null;
+
+						const body = (await response.json()) as {
+							data?: Array<{
+								zuid?: string | number;
+								accountId?: string | number;
+								primaryEmailAddress?: string;
+								mailboxAddress?: string;
+								displayName?: string;
+								accountDisplayName?: string;
+								type?: string;
+							}>;
+						};
+
+						const account =
+							body.data?.find((entry) => entry.type === "ZOHO_ACCOUNT") ??
+							body.data?.[0];
+						const email =
+							account?.primaryEmailAddress ?? account?.mailboxAddress;
+						const id = account?.zuid ?? account?.accountId;
+
+						if (!id || !email) return null;
+
+						return {
+							id: String(id),
+							email,
+							emailVerified: true,
+							name:
+								account?.displayName ?? account?.accountDisplayName ?? email,
+						};
+					},
+				},
+			]
+		: [],
+});
+
 export const auth = betterAuth({
 	appName: "CRM",
 	baseURL: env.apiUrl,
@@ -61,15 +114,22 @@ export const auth = betterAuth({
 	}),
 
 	emailAndPassword: {
-		enabled: false,
+		enabled: true,
 	},
 
 	socialProviders,
 
 	account: {
+		encryptOAuthTokens: true,
 		accountLinking: {
 			enabled: true,
-			trustedProviders: [GOOGLE_PROVIDER_ID, MICROSOFT_PROVIDER_ID],
+			disableImplicitLinking: true,
+			allowDifferentEmails: true,
+			trustedProviders: [
+				GOOGLE_PROVIDER_ID,
+				MICROSOFT_PROVIDER_ID,
+				ZOHO_PROVIDER_ID,
+			],
 		},
 	},
 
@@ -100,7 +160,16 @@ export const auth = betterAuth({
 	},
 
 	trustedOrigins: [...env.trustedOrigins],
-	hooks: {},
+	hooks: {
+		before: createAuthMiddleware(async (ctx) => {
+			if (ctx.path === "/sign-in/social" || ctx.path === "/sign-in/oauth2") {
+				throw new APIError("FORBIDDEN", {
+					message:
+						"Mail and calendar providers can only be connected from Settings.",
+				});
+			}
+		}),
+	},
 
 	plugins: [
 		organization({
@@ -123,6 +192,8 @@ export const auth = betterAuth({
 		sso({
 			organizationProvisioning: { disabled: true },
 		}),
+
+		zohoOAuth,
 	],
 
 	databaseHooks: {

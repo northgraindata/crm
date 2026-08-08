@@ -15,9 +15,9 @@ export class SyncStateService {
 
 	constructor(@InjectDatabase() private readonly db: Db) {}
 
-	async get(userId: string, source: SyncSource): Promise<MailboxSync | null> {
+	async get(id: string): Promise<MailboxSync | null> {
 		return this.db.mailboxSync.findUnique({
-			where: { userId_source: { userId, source } },
+			where: { id },
 		});
 	}
 
@@ -56,23 +56,36 @@ export class SyncStateService {
 		});
 	}
 
-	async ensure(
-		userId: string,
-		source: SyncSource,
-		options: { autoCreate: boolean },
-	): Promise<MailboxSync> {
+	async ensure(input: {
+		userId: string;
+		authAccountId: string;
+		source: SyncSource;
+		externalId: string;
+		autoCreate: boolean;
+		mailboxAddress?: string | null;
+		displayName?: string | null;
+	}): Promise<MailboxSync> {
 		return this.db.mailboxSync.upsert({
-			where: { userId_source: { userId, source } },
+			where: {
+				authAccountId_source_externalId: {
+					authAccountId: input.authAccountId,
+					source: input.source,
+					externalId: input.externalId,
+				},
+			},
 			create: {
-				userId,
-				source,
+				userId: input.userId,
+				authAccountId: input.authAccountId,
+				source: input.source,
+				externalId: input.externalId,
+				mailboxAddress: input.mailboxAddress,
+				displayName: input.displayName,
 				status: GoogleSyncStatus.IDLE,
-				autoCreate: options.autoCreate,
+				autoCreate: input.autoCreate,
 			},
 			update: {
-				status: GoogleSyncStatus.IDLE,
-				lastError: null,
-				retryAfter: null,
+				mailboxAddress: input.mailboxAddress,
+				displayName: input.displayName,
 			},
 		});
 	}
@@ -154,18 +167,28 @@ export class SyncStateService {
 
 	async setAutoCreate(
 		userId: string,
-		source: SyncSource,
+		id: string,
 		enabled: boolean,
 	): Promise<void> {
 		await this.db.mailboxSync.updateMany({
-			where: { userId, source },
+			where: { id, userId },
 			data: { autoCreate: enabled },
 		});
 	}
 
-	async remove(userId: string, source?: SyncSource): Promise<void> {
+	async removeForAccount(userId: string, authAccountId: string): Promise<void> {
 		await this.db.mailboxSync.deleteMany({
-			where: { userId, ...(source ? { source } : {}) },
+			where: { userId, authAccountId },
+		});
+	}
+
+	async updateIdentity(
+		id: string,
+		identity: { mailboxAddress: string; displayName?: string | null },
+	): Promise<void> {
+		await this.db.mailboxSync.update({
+			where: { id },
+			data: identity,
 		});
 	}
 }

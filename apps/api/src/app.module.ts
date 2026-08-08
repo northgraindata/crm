@@ -31,6 +31,7 @@ import { TelemetryModule } from "./telemetry/telemetry.module";
 import { TrpcModule } from "./trpc/trpc.module";
 import { UsersModule } from "./users/users.module";
 import { WorkspaceModule } from "./workspace/workspace.module";
+import { ZohoModule } from "./zoho/zoho.module";
 
 @Module({
 	imports: [
@@ -61,6 +62,7 @@ import { WorkspaceModule } from "./workspace/workspace.module";
 		MailboxModule,
 		GoogleModule,
 		MicrosoftModule,
+		ZohoModule,
 		SyncModule,
 		SettingsModule,
 		WorkspaceModule,

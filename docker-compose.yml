@@ -1,5 +1,5 @@
 x-crm-image: &crm-image
-  image: northgrain-crm:${SOURCE_COMMIT:-release}
+  image: northgraindata-crm:${SOURCE_COMMIT:-release}
   build:
     context: .
     dockerfile: Dockerfile
@@ -22,6 +22,10 @@ x-crm-environment: &crm-environment
   GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
   MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
   MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+  ZOHO_CLIENT_ID: ${ZOHO_CLIENT_ID:-}
+  ZOHO_CLIENT_SECRET: ${ZOHO_CLIENT_SECRET:-}
+  ZOHO_ACCOUNTS_URL: ${ZOHO_ACCOUNTS_URL:-https://accounts.zoho.eu}
+  ZOHO_MAIL_URL: ${ZOHO_MAIL_URL:-https://mail.zoho.eu}
   MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
   RAPIDAPI_KEY: ${RAPIDAPI_KEY:-}
   GITHUB_TOKEN: ${GITHUB_TOKEN:-}

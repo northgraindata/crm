@@ -18,6 +18,8 @@ export const ALLOWED_PROPERTIES = [
 	"cap_agent_bridge",
 	"cap_cron_secret",
 	"cap_google_oauth",
+	"cap_microsoft_oauth",
+	"cap_zoho_oauth",
 	"cap_sso_provider",
 	"is_marketing",
 	"agent_model_id",
@@ -219,7 +221,7 @@ export function permittedTaskKind(kind: string | null | undefined): string {
 	return kind && TASK_KIND_SET.has(kind) ? kind : OTHER;
 }
 
-export const SYNC_SOURCES = ["gmail", "calendar", "outlook"] as const;
+export const SYNC_SOURCES = ["gmail", "calendar", "outlook", "zoho"] as const;
 
 export type TelemetrySyncSource = (typeof SYNC_SOURCES)[number];
 
@@ -235,6 +237,7 @@ const SYNC_ERROR_SOURCES: Record<TelemetrySyncSource, string> = {
 	gmail: "google_sync",
 	calendar: "google_sync",
 	outlook: "microsoft_sync",
+	zoho: "zoho_sync",
 };
 
 export function permittedSyncErrorSource(

@@ -51,7 +51,7 @@ export class CalendarSyncService {
 	) {}
 
 	async sync(row: MailboxSync): Promise<SyncOutcome> {
-		const token = await this.tokens.accessTokenFor(row.userId, "calendar");
+		const token = await this.tokens.accessTokenFor(row);
 
 		if (token.outcome === "not-connected") {
 			return {
@@ -74,6 +74,17 @@ export class CalendarSyncService {
 
 		await this.state.markRunning(row.id);
 
+		const calendar = await this.calendar.calendar(
+			token.accessToken,
+			row.externalId,
+		);
+		if (calendar.outcome === "ok" && calendar.data.id) {
+			await this.state.updateIdentity(row.id, {
+				mailboxAddress: calendar.data.id.toLowerCase(),
+				displayName: calendar.data.summary ?? null,
+			});
+		}
+
 		const [internal, suppressedDomains, suppressedEmails] = await Promise.all([
 			this.match.internalIdentity(),
 			this.match.suppressedDomains(),
@@ -93,12 +104,16 @@ export class CalendarSyncService {
 		let removed = 0;
 
 		for (let page = 0; page < MAX_PAGES_PER_TICK; page += 1) {
-			const result = await this.calendar.listEvents(token.accessToken, {
-				syncToken,
-				pageToken,
-				timeMin: new Date().toISOString(),
-				timeMax: this.horizon().toISOString(),
-			});
+			const result = await this.calendar.listEvents(
+				token.accessToken,
+				row.externalId,
+				{
+					syncToken,
+					pageToken,
+					timeMin: new Date().toISOString(),
+					timeMax: this.horizon().toISOString(),
+				},
+			);
 
 			if (result.outcome === "cursor-invalid") {
 				await this.state.clearCursor(row.id, result.reason);
@@ -261,6 +276,7 @@ export class CalendarSyncService {
 				companyId: match.companyId,
 				contactId: match.contactId,
 				syncedByUserId: row.userId,
+				syncedByMailboxId: row.id,
 				googleEventId: event.id ?? null,
 			},
 			update: {
@@ -410,14 +426,14 @@ export class CalendarSyncService {
 		const people: Participant[] = [];
 
 		for (const attendee of event.attendees ?? []) {
-			if (!attendee.email || attendee.resource) continue;
+			if (!attendee.email || attendee.resource || attendee.self) continue;
 			people.push({
 				email: attendee.email.toLowerCase(),
 				name: attendee.displayName ?? null,
 			});
 		}
 
-		if (event.organizer?.email) {
+		if (event.organizer?.email && !event.organizer.self) {
 			people.push({
 				email: event.organizer.email.toLowerCase(),
 				name: event.organizer.displayName ?? null,

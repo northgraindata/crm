@@ -272,14 +272,6 @@ describe("proxy", () => {
 		).toBe(`/${SLUG}`);
 	});
 
-	it("never fights /grant-access, which would ping-pong forever", async () => {
-		setup({ onboarded: false });
-
-		expect(
-			redirectedTo(await proxy(request("/grant-access", [SESSION_COOKIE]))),
-		).toBeNull();
-	});
-
 	it("leaves the agent bridge alone", async () => {
 		setup({ onboarded: false });
 

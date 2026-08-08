@@ -462,8 +462,8 @@ export function AgentComposer({
 		submitAction.run(prompt, clientRequestId);
 	};
 
-	const connectedGoogle = (google.data?.sources ?? []).filter(
-		(source) => source.connected,
+	const connectedGoogle = (google.data?.connections ?? []).flatMap(
+		(connection) => connection.sources.filter((source) => source.connected),
 	);
 	const focusAfterContext = (key: string) => {
 		let attempts = 0;

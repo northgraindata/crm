@@ -12,6 +12,8 @@ import {
 import type { MicrosoftConnectionService } from "../src/microsoft/microsoft-connection.service";
 import type { MicrosoftSyncService } from "../src/microsoft/microsoft-sync.service";
 import { MailboxSyncService } from "../src/sync/mailbox-sync.service";
+import type { ZohoConnectionService } from "../src/zoho/zoho-connection.service";
+import type { ZohoSyncRunnerService } from "../src/zoho/zoho-sync-runner.service";
 
 type Outcome = {
 	source: string;
@@ -113,7 +115,7 @@ const noConnections = {
 
 function build(
 	state: FakeState,
-	runOne: (userId: string, source: string) => Promise<Outcome | null>,
+	runOne: (syncId: string, source: string) => Promise<Outcome | null>,
 ): MailboxSyncService {
 	const provider = { runOne } as unknown as GoogleSyncService;
 
@@ -123,6 +125,8 @@ function build(
 		provider as unknown as MicrosoftSyncService,
 		noConnections as unknown as GoogleConnectionService,
 		noConnections as unknown as MicrosoftConnectionService,
+		provider as unknown as ZohoSyncRunnerService,
+		noConnections as unknown as ZohoConnectionService,
 	);
 }
 
@@ -162,7 +166,7 @@ describe("runDue claims a mailbox before it syncs", () => {
 		inFlight?.();
 		const firstSummary = await first;
 
-		expect(calls).toEqual(["user-a:gmail"]);
+		expect(calls).toEqual(["a:gmail"]);
 		expect(firstSummary.attempted).toBe(1);
 		expect(firstSummary.synced).toBe(1);
 		expect(second.attempted).toBe(0);

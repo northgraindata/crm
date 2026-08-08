@@ -151,7 +151,7 @@ A [Turborepo](https://turborepo.dev) monorepo on [Bun](https://bun.com), deploye
 | **Front end** | [Next.js](https://nextjs.org) App Router · [shadcn/ui](https://ui.shadcn.com) · [nuqs](https://nuqs.dev) for URL state |
 | **API** | [NestJS](https://nestjs.com) with [nestjs-trpc](https://nestjs-trpc.io) — HTTP, auth, tRPC, mailbox sync |
 | **Data** | [Prisma](https://prisma.io) · Postgres ([Neon](https://neon.tech)) · optional Redis ([Upstash](https://upstash.com)) |
-| **Auth** | [Better Auth](https://better-auth.com) — Google, Microsoft, or your own IdP; one allow-list |
+| **Auth** | [Better Auth](https://better-auth.com) — local email/password or your own IdP; one allow-list |
 | **Files** | [Vercel Blob](https://vercel.com/docs/vercel-blob) — mirrors profile pictures so they survive the source going away |
 | **Tooling** | [Biome](https://biomejs.dev) · TypeScript everywhere |
 
@@ -220,10 +220,12 @@ Open `.env` and set these. Everything else in the file is optional and commented
 | `OPENROUTER_API_KEY`                       | An API key from [OpenRouter](https://openrouter.ai/settings/keys).     |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`| A Google OAuth client — 2 minutes, below. Both or neither.             |
 | `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | A Microsoft Entra app registration — below. Both or neither. |
+| `ZOHO_CLIENT_ID` / `ZOHO_CLIENT_SECRET` | A Zoho server OAuth client — below. Both or neither. |
 
-**Pick at least one of Google and Microsoft**, or add your own identity provider on
-**Settings → SSO** once you are in. Setting both is fine and common: the sign-in page
-offers both buttons, and each rep's mail is read from whichever they signed in with.
+Create an account with email/password, then connect Google, Microsoft and Zoho from
+**Settings → Connections**. Provider OAuth is not used for login. Each user may add
+multiple provider accounts; one Google grant exposes all calendars on that account and
+one Zoho grant may expose multiple mailboxes.
 
 `DATABASE_URL` already matches the `docker compose` Postgres, so leave it alone unless
 you brought your own.
@@ -236,13 +238,25 @@ you brought your own.
 3. Enable the [Gmail API](https://console.cloud.google.com/apis/library/gmail.googleapis.com) and the [Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com) for the project.
 4. Copy the client ID and secret into `.env`.
 
-Google is the sign-in method a clone starts with, and the same client reads Gmail and
-Calendar — so most installs want it. The API will nonetheless boot without it: an
-install that signs in with Microsoft, or through its own identity provider added on
-**Settings → SSO**, leaves both empty and gets no Google button and no Gmail sync. Set
-them together or not at all; half a pair is a button that fails at Google. If your
+The Google client is only used to link Gmail and Calendar. The API boots without it;
+the Google connection card then shows that it is not configured. Set the pair together
+or not at all. If your
 account is on a Google Workspace domain, set the consent screen to **Internal** and
 nobody outside your org can even reach the prompt.
+
+</details>
+
+<details>
+<summary><strong>Getting the Zoho OAuth client</strong></summary>
+
+1. Create a server-based application in the Zoho API Console.
+2. Add `http://localhost:3001/api/auth/oauth2/callback/zoho` as its redirect URI.
+3. Put the client ID and secret in `.env`.
+4. EU accounts use the defaults. For another data centre, set both
+   `ZOHO_ACCOUNTS_URL` and `ZOHO_MAIL_URL`, for example `.com` for the US.
+
+The CRM requests read-only account and message scopes. The first sync starts from now,
+so connecting an established mailbox does not backfill its history.
 
 </details>
 
@@ -332,9 +346,8 @@ short version:
 
 Scope any of them with a Turborepo filter: `bun run dev --filter=api`.
 
-Because sign-in goes through an identity provider, there is no way to get a session from a terminal —
-`dev:session` writes the rows Better Auth would have written and prints the cookie it
-would have set. It refuses to run with `NODE_ENV=production`.
+`dev:session` creates a local development session and prints its cookie. It refuses to
+run with `NODE_ENV=production`.
 
 ## Deploying
 
@@ -348,9 +361,10 @@ the whole CRM uses one hostname and one same-origin session cookie.
 1. Create a Docker Compose application from this repository and select `release`.
 2. Use `docker-compose.yml` and attach your domain to the `web` service on port 3000.
 3. Set `BETTER_AUTH_SECRET`, `ALLOWED_SIGN_IN` and `OPENROUTER_API_KEY` in Coolify.
-4. Set either the Google or Microsoft client ID and secret. Register
-   `https://<your-domain>/api/auth/callback/google` or
-   `https://<your-domain>/api/auth/callback/microsoft` with that provider.
+4. Optionally set any Google, Microsoft or Zoho client pair. Register
+   `https://<your-domain>/api/auth/callback/google`,
+   `https://<your-domain>/api/auth/callback/microsoft`, or
+   `https://<your-domain>/api/auth/oauth2/callback/zoho` with that provider.
 5. Deploy. Coolify generates the database, Redis, bridge and cron secrets; the
    one-shot `migrate` service applies migrations before the API starts.
 

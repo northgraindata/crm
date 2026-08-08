@@ -17,7 +17,6 @@ export const RESERVED_SLUGS: readonly string[] = [
 	"contacts",
 	"deals",
 	"eve",
-	"grant-access",
 	"onboarding",
 	"settings",
 	"sign-in",

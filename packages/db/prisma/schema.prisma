@@ -69,11 +69,11 @@ model Session {
 }
 
 model Account {
-  id                    String    @id
+  id                    String        @id
   accountId             String
   providerId            String
   userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
   refreshToken          String?
   idToken               String?
@@ -81,8 +81,9 @@ model Account {
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  mailboxSyncs          MailboxSync[]
 
   @@index([userId])
   @@map("account")
@@ -1052,10 +1053,15 @@ enum EmailDirection {
 }
 
 model MailboxSync {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  source String
+  id             String  @id @default(cuid())
+  userId         String
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authAccountId  String
+  authAccount    Account @relation(fields: [authAccountId], references: [id], onDelete: Cascade)
+  source         String
+  externalId     String
+  mailboxAddress String?
+  displayName    String?
 
   status       GoogleSyncStatus @default(IDLE)
   cursor       String?
@@ -1067,7 +1073,11 @@ model MailboxSync {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, source])
+  emailMessages  EmailMessage[]
+  calendarEvents CalendarEvent[]
+
+  @@unique([authAccountId, source, externalId])
+  @@index([userId, source])
   @@index([status])
   @@map("mailboxSync")
 }
@@ -1102,11 +1112,14 @@ model EmailMessage {
   threadId String
   thread   EmailThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
-  rfcMessageId     String  @unique
-  syncedByUserId   String?
-  gmailMessageId   String?
-  outlookMessageId String?
-  outlookWebLink   String?
+  rfcMessageId      String       @unique
+  syncedByUserId    String?
+  syncedByMailboxId String?
+  syncedByMailbox   MailboxSync? @relation(fields: [syncedByMailboxId], references: [id], onDelete: SetNull)
+  gmailMessageId    String?
+  outlookMessageId  String?
+  outlookWebLink    String?
+  zohoMessageId     String?
 
   direction  EmailDirection
   fromEmail  String
@@ -1120,6 +1133,7 @@ model EmailMessage {
   createdAt DateTime @default(now())
 
   @@index([threadId, sentAt])
+  @@index([syncedByMailboxId])
   @@map("emailMessage")
 }
 
@@ -1144,8 +1158,10 @@ model CalendarEvent {
   contactId String?
   contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
-  syncedByUserId String?
-  googleEventId  String?
+  syncedByUserId    String?
+  syncedByMailboxId String?
+  syncedByMailbox   MailboxSync? @relation(fields: [syncedByMailboxId], references: [id], onDelete: SetNull)
+  googleEventId     String?
 
   attendees CalendarAttendee[]
   activity  Activity?
@@ -1156,6 +1172,7 @@ model CalendarEvent {
   @@unique([iCalUid, originalStartTime])
   @@index([companyId, startsAt])
   @@index([contactId, startsAt])
+  @@index([syncedByMailboxId])
   @@map("calendarEvent")
 }
 

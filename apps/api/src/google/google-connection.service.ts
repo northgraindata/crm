@@ -1,4 +1,4 @@
-import { isGoogleConfigured, signsInWithGoogle } from "@crm/auth";
+import { isGoogleConfigured } from "@crm/auth";
 import { type Db, GoogleSyncStatus, type Prisma } from "@crm/db";
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { normalizeDomain } from "../companies/domain";
@@ -7,6 +7,7 @@ import { InjectDatabase } from "../database/database.constants";
 import { MailboxMatchService } from "../mailbox/mailbox-match.service";
 import { MailboxTokenService } from "../mailbox/mailbox-token.service";
 import { SyncStateService } from "../mailbox/sync-state.service";
+import { CalendarClient } from "./calendar.client";
 import {
 	GOOGLE_PROVIDER_ID,
 	GOOGLE_SYNC_SOURCES,
@@ -17,7 +18,10 @@ import {
 const PURGE_TIMEOUT_MS = 60_000;
 
 export type SourceStatus = {
+	id: string;
 	source: GoogleSyncSource;
+	mailboxAddress: string | null;
+	displayName: string | null;
 	connected: boolean;
 	status: GoogleSyncStatus | null;
 	lastSyncedAt: string | null;
@@ -26,11 +30,14 @@ export type SourceStatus = {
 };
 
 export type ConnectionStatus = {
-	configured: boolean;
-	linked: boolean;
-	required: boolean;
+	id: string;
 	hasRefreshToken: boolean;
 	sources: SourceStatus[];
+};
+
+export type GoogleStatus = {
+	configured: boolean;
+	connections: ConnectionStatus[];
 };
 
 @Injectable()
@@ -43,64 +50,111 @@ export class GoogleConnectionService {
 		private readonly state: SyncStateService,
 		private readonly match: MailboxMatchService,
 		private readonly stamp: ActivityStampService,
+		private readonly calendar: CalendarClient,
 	) {}
 
-	async status(userId: string): Promise<ConnectionStatus> {
+	async status(userId: string): Promise<GoogleStatus> {
 		await this.onConnected(userId);
 
-		const [granted, rows, hasRefreshToken, accounts] = await Promise.all([
-			this.tokens.grantedScopes(userId, GOOGLE_PROVIDER_ID),
+		const [rows, accounts] = await Promise.all([
 			this.state.listForUser(userId, GOOGLE_SYNC_SOURCES),
-			this.tokens.hasRefreshToken(userId, GOOGLE_PROVIDER_ID),
-			this.tokens.signInAccounts(userId),
+			this.tokens.accountsForUser(userId, GOOGLE_PROVIDER_ID),
 		]);
-
-		const bySource = new Map(rows.map((row) => [row.source, row]));
-
-		const sources = GOOGLE_SYNC_SOURCES.map((source): SourceStatus => {
-			const row = bySource.get(source);
-			const connected = granted.has(SCOPE_FOR_SOURCE[source]);
-
-			return {
-				source,
-				connected,
-				status: row?.status ?? null,
-				lastSyncedAt: row?.lastSyncedAt?.toISOString() ?? null,
-				lastError: row?.lastError ?? null,
-				autoCreate: row?.autoCreate ?? false,
-			};
-		});
 
 		return {
 			configured: isGoogleConfigured(),
-			linked:
-				accounts.some((account) => account.providerId === GOOGLE_PROVIDER_ID) &&
-				sources.some((source) => source.connected),
-			required: signsInWithGoogle(accounts),
-			hasRefreshToken,
-			sources,
+			connections: await Promise.all(
+				accounts.map(async (account): Promise<ConnectionStatus> => {
+					const granted = await this.tokens.grantedScopes(account.id);
+					const sources = rows
+						.filter((row) => row.authAccountId === account.id)
+						.map(
+							(row): SourceStatus => ({
+								id: row.id,
+								source: row.source as GoogleSyncSource,
+								mailboxAddress: row.mailboxAddress,
+								displayName: row.displayName,
+								connected: granted.has(
+									SCOPE_FOR_SOURCE[row.source as GoogleSyncSource],
+								),
+								status: row.status,
+								lastSyncedAt: row.lastSyncedAt?.toISOString() ?? null,
+								lastError: row.lastError,
+								autoCreate: row.autoCreate,
+							}),
+						);
+
+					return {
+						id: account.id,
+						hasRefreshToken: Boolean(account.refreshToken),
+						sources,
+					};
+				}),
+			),
 		};
 	}
 
 	async onConnected(userId: string): Promise<void> {
-		const [granted, existing] = await Promise.all([
-			this.tokens.grantedScopes(userId, GOOGLE_PROVIDER_ID),
-			this.state.listForUser(userId, GOOGLE_SYNC_SOURCES),
-		]);
-
-		const known = new Set(existing.map((row) => row.source));
-
+		const accounts = await this.tokens.accountsForUser(
+			userId,
+			GOOGLE_PROVIDER_ID,
+		);
 		const added: string[] = [];
 
-		for (const source of GOOGLE_SYNC_SOURCES) {
-			if (!granted.has(SCOPE_FOR_SOURCE[source])) continue;
-			if (known.has(source)) continue;
+		for (const account of accounts) {
+			const granted = await this.tokens.grantedScopes(account.id);
 
-			await this.state.ensure(userId, source, {
-				autoCreate: source === "calendar",
-			});
+			if (granted.has(SCOPE_FOR_SOURCE.gmail)) {
+				const row = await this.state.ensure({
+					userId,
+					authAccountId: account.id,
+					source: "gmail",
+					externalId: "primary",
+					autoCreate: false,
+				});
 
-			added.push(source);
+				if (row.createdAt.getTime() === row.updatedAt.getTime()) {
+					added.push(`${account.id}:gmail`);
+				}
+			}
+
+			if (!granted.has(SCOPE_FOR_SOURCE.calendar)) continue;
+
+			const token = await this.tokens.accessTokenForAccount(
+				userId,
+				account.id,
+				SCOPE_FOR_SOURCE.calendar,
+				"calendar",
+			);
+			if (token.outcome !== "ok") continue;
+
+			let pageToken: string | undefined;
+			do {
+				const calendars = await this.calendar.calendars(
+					token.accessToken,
+					pageToken,
+				);
+				if (calendars.outcome !== "ok") break;
+
+				for (const calendar of calendars.data.items ?? []) {
+					if (!calendar.id) continue;
+					const row = await this.state.ensure({
+						userId,
+						authAccountId: account.id,
+						source: "calendar",
+						externalId: calendar.id,
+						mailboxAddress: calendar.id.toLowerCase(),
+						displayName: calendar.summary ?? null,
+						autoCreate: calendar.primary === true,
+					});
+
+					if (row.createdAt.getTime() === row.updatedAt.getTime()) {
+						added.push(`${account.id}:calendar:${calendar.id}`);
+					}
+				}
+
+				pageToken = calendars.data.nextPageToken;
+			} while (pageToken);
 		}
 
 		if (added.length > 0) {
@@ -119,14 +173,17 @@ export class GoogleConnectionService {
 			select: { userId: true },
 		});
 
-		for (const account of new Set(accounts.map((row) => row.userId))) {
-			await this.onConnected(account);
+		for (const userId of new Set(accounts.map((row) => row.userId))) {
+			await this.onConnected(userId);
 		}
 	}
 
-	async purgeSyncedData(userId: string): Promise<{ purged: number }> {
+	async purgeSyncedData(
+		userId: string,
+		authAccountId: string,
+	): Promise<{ purged: number }> {
 		const mine: Prisma.EmailMessageWhereInput = {
-			syncedByUserId: userId,
+			syncedByMailbox: { userId, authAccountId },
 			gmailMessageId: { not: null },
 		};
 
@@ -148,7 +205,7 @@ export class GoogleConnectionService {
 				await rebuildThreads(tx, threadIds);
 
 				const events = await tx.calendarEvent.deleteMany({
-					where: { syncedByUserId: userId },
+					where: { syncedByMailbox: { userId, authAccountId } },
 				});
 
 				return messages.count + events.count;
@@ -163,26 +220,29 @@ export class GoogleConnectionService {
 		return { purged };
 	}
 
-	async revoke(userId: string): Promise<{ revoked: boolean }> {
-		for (const source of GOOGLE_SYNC_SOURCES) {
-			await this.state.remove(userId, source);
-		}
-
-		const revoked = await this.tokens.revoke(userId, GOOGLE_PROVIDER_ID);
+	async revoke(
+		userId: string,
+		authAccountId: string,
+	): Promise<{ revoked: boolean }> {
+		const revoked = await this.tokens.revoke(userId, authAccountId);
 		return { revoked };
 	}
 
 	async setAutoCreate(
 		userId: string,
-		source: GoogleSyncSource,
+		syncId: string,
 		enabled: boolean,
 	): Promise<void> {
-		const row = await this.state.get(userId, source);
-		if (!row) {
-			throw new NotFoundException(`${source} is not connected.`);
+		const row = await this.state.get(syncId);
+		if (
+			!row ||
+			row.userId !== userId ||
+			!GOOGLE_SYNC_SOURCES.includes(row.source as GoogleSyncSource)
+		) {
+			throw new NotFoundException("That Google source is not connected.");
 		}
 
-		await this.state.setAutoCreate(userId, source, enabled);
+		await this.state.setAutoCreate(userId, syncId, enabled);
 	}
 
 	async suppressDomain(

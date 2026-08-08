@@ -31,6 +31,7 @@ const match = new MailboxMatchService(db, directory, agent, log);
 const threads = new ThreadWriterService(db, match, stamp);
 
 let row: MailboxSync;
+const accountId = `account-${suffix}`;
 
 function message(id: string, sentAt: Date, root = rootId): IncomingMessage {
 	return {
@@ -54,6 +55,7 @@ async function clean() {
 	await db.contact.deleteMany({ where: { email: person } });
 	await db.company.deleteMany({ where: { domain } });
 	await db.mailboxSync.deleteMany({ where: { userId } });
+	await db.account.deleteMany({ where: { userId } });
 	await db.user.deleteMany({ where: { id: userId } });
 }
 
@@ -63,8 +65,22 @@ beforeAll(async () => {
 	await db.user.create({
 		data: { id: userId, name: "Test Rep", email: mailbox },
 	});
+	await db.account.create({
+		data: {
+			id: accountId,
+			accountId: `google-${suffix}`,
+			providerId: "google",
+			userId,
+		},
+	});
 	row = await db.mailboxSync.create({
-		data: { userId, source: "gmail", autoCreate: false },
+		data: {
+			userId,
+			authAccountId: accountId,
+			source: "gmail",
+			externalId: "primary",
+			autoCreate: false,
+		},
 	});
 
 	const company = await db.company.create({

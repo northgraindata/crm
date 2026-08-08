@@ -97,8 +97,8 @@ whose event never arrived, which cannot be recovered.
 #### Capabilities — booleans, never values
 
 `cap_rapidapi`, `cap_openrouter`, `cap_context_dev`, `cap_blob`, `cap_github`, `cap_redis`,
-`cap_agent_bridge`, `cap_cron_secret`, `cap_google_oauth`, `cap_sso_provider`,
-`is_marketing`.
+`cap_agent_bridge`, `cap_cron_secret`, `cap_google_oauth`, `cap_microsoft_oauth`,
+`cap_zoho_oauth`, `cap_sso_provider`, `is_marketing`.
 
 Each is only whether the key is set. `cap_context_dev` is whether an `AppSetting` row holds one,
 `cap_sso_provider` whether an `ssoProvider` row exists. No key, value or last-four is sent.
@@ -206,13 +206,13 @@ our errors would carry contact fields.
 | Event | Properties |
 | --- | --- |
 | `agent_error` | `error_class`, `tool`, `task_kind`, `error_source` (`tool` / `turn` / `session`) |
-| `sync_error` | `error_class`, `sync_source` (`gmail` / `calendar` / `outlook`), `error_source` (`google_sync` / `microsoft_sync` / `mailbox_sync`) |
+| `sync_error` | `error_class`, `sync_source` (`gmail` / `calendar` / `outlook` / `zoho`), `error_source` (`google_sync` / `microsoft_sync` / `zoho_sync` / `mailbox_sync`) |
 | `api_error` | `error_class`, `route`, `status_code` |
 | `model_error` | `error_class`, `model_id` |
 
 `sync_error`'s `error_source` is derived from `sync_source` rather than passed in, so one
-mailbox pipeline that dispatches to both providers cannot report an Outlook failure as a Google
-one. A source that is not one of the three is sent as `other`, and its `error_source` as
+mailbox pipeline that dispatches to multiple providers cannot report an Outlook failure as a Google
+one. A source that is not one of the four is sent as `other`, and its `error_source` as
 `mailbox_sync`.
 
 `route` is the **route pattern** — `/internal/sync/google`, `/trpc/contacts.list` — never a URL

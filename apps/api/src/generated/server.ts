@@ -22,11 +22,12 @@ import { setReportingCurrencyInput, setManualRateInput, removeManualRateInput } 
 import { dashboardSummaryInput } from "../dashboard/dashboard.contracts";
 import { dealListInput, dealIdInput, dealCreateInput, dealUpdateArgs, setStageInput, dealContactsInput, dealAttachContactInput, dealDetachContactInput, dealContactRoleInput, dealBulkOwnerInput, dealBulkStageInput, dealBulkInput } from "../deals/deals.contracts";
 import { fieldListInput, fieldByKeyInput, fieldIdInput, fieldCreateInput, fieldUpdateArgs, fieldReorderInput } from "../fields/fields.contracts";
-import { setAutoCreateInput, suppressDomainInput, threadInput, calendarEventInput } from "../google/google.contracts";
-import { setOutlookAutoCreateInput } from "../microsoft/microsoft.contracts";
+import { googleConnectionInput, setAutoCreateInput, suppressDomainInput, threadInput, calendarEventInput } from "../google/google.contracts";
+import { microsoftConnectionInput, setOutlookAutoCreateInput } from "../microsoft/microsoft.contracts";
 import { setAgentModelInput, setResearchKeyInput } from "../settings/settings.contracts";
 import { ssoProviderListInput, registerSsoProviderInput, deleteSsoProviderInput } from "../sso/sso.contracts";
 import { memberListInput, updateWorkspaceInput, setMemberRoleInput } from "../workspace/workspace.contracts";
+import { zohoConnectionInput, setZohoAutoCreateInput } from "../zoho/zoho.contracts";
 import type { ActivitiesRouter } from "../activities/activities.router";
 import type { AgentsRouter } from "../agent/agents.router";
 import type { CompaniesRouter } from "../companies/companies.router";
@@ -43,6 +44,7 @@ import type { SettingsRouter } from "../settings/settings.router";
 import type { SsoRouter } from "../sso/sso.router";
 import type { UsersRouter } from "../users/users.router";
 import type { WorkspaceRouter } from "../workspace/workspace.router";
+import type { ZohoRouter } from "../zoho/zoho.router";
 
 const appRouter = t.router({
   activities: t.router({
@@ -318,8 +320,10 @@ const appRouter = t.router({
     status: publicProcedure
       .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<GoogleRouter["status"]>>),
     purgeSyncedData: publicProcedure
+      .input(googleConnectionInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<GoogleRouter["purgeSyncedData"]>>),
     revokeAccess: publicProcedure
+      .input(googleConnectionInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<GoogleRouter["revokeAccess"]>>),
     syncNow: publicProcedure
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<GoogleRouter["syncNow"]>>),
@@ -340,8 +344,10 @@ const appRouter = t.router({
     status: publicProcedure
       .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<MicrosoftRouter["status"]>>),
     purgeSyncedData: publicProcedure
+      .input(microsoftConnectionInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<MicrosoftRouter["purgeSyncedData"]>>),
     revokeAccess: publicProcedure
+      .input(microsoftConnectionInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<MicrosoftRouter["revokeAccess"]>>),
     syncNow: publicProcedure
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<MicrosoftRouter["syncNow"]>>),
@@ -401,6 +407,18 @@ const appRouter = t.router({
     setMemberRole: publicProcedure
       .input(setMemberRoleInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkspaceRouter["setMemberRole"]>>)
+    }),
+  zoho: t.router({
+    status: publicProcedure
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<ZohoRouter["status"]>>),
+    syncNow: publicProcedure
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<ZohoRouter["syncNow"]>>),
+    revokeAccess: publicProcedure
+      .input(zohoConnectionInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<ZohoRouter["revokeAccess"]>>),
+    setAutoCreate: publicProcedure
+      .input(setZohoAutoCreateInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<ZohoRouter["setAutoCreate"]>>)
     })
 });
 

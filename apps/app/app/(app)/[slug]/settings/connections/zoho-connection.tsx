@@ -1,8 +1,6 @@
 "use client";
 
 import { authClient } from "@crm/auth/client";
-import { MICROSOFT_SYNC_SCOPES } from "@crm/auth/scopes";
-import MicrosoftLogo from "@crm/ui/components/brand-logos/microsoft";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -11,16 +9,12 @@ import { useCrmCache } from "@/lib/trpc/cache";
 import { useTRPC } from "@/lib/trpc/client";
 import { ProviderConnections } from "./provider-connections";
 
-export function MicrosoftConnection({
-	connectError,
-}: {
-	connectError?: string;
-}) {
+export function ZohoConnection({ connectError }: { connectError?: string }) {
 	const trpc = useTRPC();
 	const cache = useCrmCache();
 	const [connecting, setConnecting] = useState(false);
 	const status = useQuery({
-		...trpc.microsoft.status.queryOptions(),
+		...trpc.zoho.status.queryOptions(),
 		refetchInterval: (query) =>
 			query.state.data?.connections.some((connection) =>
 				connection.sources.some((source) => isSyncing(source.status)),
@@ -29,29 +23,20 @@ export function MicrosoftConnection({
 				: false,
 	});
 	const sync = useMutation(
-		trpc.microsoft.syncNow.mutationOptions({
-			onSuccess: () => cache.microsoft(),
+		trpc.zoho.syncNow.mutationOptions({
+			onSuccess: () => cache.zoho(),
 			onError: (error) => toast.error(error.message),
 		}),
 	);
 	const disconnect = useMutation(
-		trpc.microsoft.revokeAccess.mutationOptions({
-			onSuccess: () => cache.microsoft(),
-			onError: (error) => toast.error(error.message),
-		}),
-	);
-	const purge = useMutation(
-		trpc.microsoft.purgeSyncedData.mutationOptions({
-			onSuccess: async (result) => {
-				await cache.microsoft();
-				toast.success(`Removed ${result.purged} synced items.`);
-			},
+		trpc.zoho.revokeAccess.mutationOptions({
+			onSuccess: () => cache.zoho(),
 			onError: (error) => toast.error(error.message),
 		}),
 	);
 	const autoCreate = useMutation(
-		trpc.microsoft.setAutoCreate.mutationOptions({
-			onSuccess: () => cache.microsoft({ settle: "record" }),
+		trpc.zoho.setAutoCreate.mutationOptions({
+			onSuccess: () => cache.zoho({ settle: "record" }),
 			onError: (error) => toast.error(error.message),
 		}),
 	);
@@ -61,38 +46,33 @@ export function MicrosoftConnection({
 	async function connect() {
 		setConnecting(true);
 		const origin = window.location.origin;
-		const { error } = await authClient.linkSocial({
-			provider: "microsoft",
-			scopes: [...MICROSOFT_SYNC_SCOPES],
+		const { error } = await authClient.oauth2.link({
+			providerId: "zoho",
 			callbackURL: `${origin}/settings/connections`,
-			errorCallbackURL: `${origin}/settings/connections?provider=microsoft`,
+			errorCallbackURL: `${origin}/settings/connections?provider=zoho`,
 		});
 		if (error) {
 			setConnecting(false);
-			toast.error(error.message ?? "Could not connect Microsoft.");
+			toast.error(error.message ?? "Could not connect Zoho.");
 		}
 	}
 
 	return (
 		<ProviderConnections
-			name="Microsoft"
-			description="Connect any number of Microsoft accounts for read-only Outlook mail sync."
+			name="Zoho Mail"
+			description="Connect any number of Zoho accounts. Every enabled mailbox in each account can sync read-only email."
 			configured={status.data.configured}
 			connections={status.data.connections}
 			connectError={connectError}
-			logo={<MicrosoftLogo data-icon="inline-start" className="size-4" />}
 			connecting={connecting}
 			syncing={sync.isPending}
 			disconnecting={disconnect.isPending}
 			changingAutoCreate={autoCreate.isPending}
-			purging={purge.isPending}
-			manageUrl="https://myapplications.microsoft.com"
 			onConnect={() => void connect()}
 			onSync={() => sync.mutate()}
 			onDisconnect={(connectionId) => disconnect.mutate({ connectionId })}
-			onPurge={(connectionId) => purge.mutate({ connectionId })}
 			onAutoCreate={(syncId, enabled) => autoCreate.mutate({ syncId, enabled })}
-			sourceLabel={() => "Outlook mail"}
+			sourceLabel={() => "Zoho Mail"}
 			autoCreateCopy={() => "Create contacts from email replies"}
 		/>
 	);

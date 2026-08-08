@@ -12,9 +12,9 @@ export class GoogleSyncService {
 		private readonly gmail: GmailSyncService,
 	) {}
 
-	async runOne(userId: string, source: GoogleSyncSource) {
-		const row = await this.state.get(userId, source);
-		if (!row) return null;
+	async runOne(syncId: string, source: GoogleSyncSource) {
+		const row = await this.state.get(syncId);
+		if (row?.source !== source) return null;
 
 		return source === "calendar"
 			? this.calendar.sync(row)
@@ -22,8 +22,9 @@ export class GoogleSyncService {
 	}
 
 	async runForUser(userId: string): Promise<void> {
-		for (const source of GOOGLE_SYNC_SOURCES) {
-			await this.runOne(userId, source);
+		const rows = await this.state.listForUser(userId, GOOGLE_SYNC_SOURCES);
+		for (const row of rows) {
+			await this.runOne(row.id, row.source as GoogleSyncSource);
 		}
 	}
 }

@@ -5,10 +5,13 @@ import { GoogleSyncService } from "../google/google-sync.service";
 import {
 	isGoogleSyncSource,
 	isMicrosoftSyncSource,
+	isZohoSyncSource,
 } from "../mailbox/mailbox.constants";
 import { SyncStateService } from "../mailbox/sync-state.service";
 import { MicrosoftConnectionService } from "../microsoft/microsoft-connection.service";
 import { MicrosoftSyncService } from "../microsoft/microsoft-sync.service";
+import { ZohoConnectionService } from "../zoho/zoho-connection.service";
+import { ZohoSyncRunnerService } from "../zoho/zoho-sync-runner.service";
 
 const TICK_BUDGET_MS = 60_000;
 
@@ -31,6 +34,8 @@ export class MailboxSyncService {
 		private readonly microsoft: MicrosoftSyncService,
 		private readonly googleConnections: GoogleConnectionService,
 		private readonly microsoftConnections: MicrosoftConnectionService,
+		private readonly zoho: ZohoSyncRunnerService,
+		private readonly zohoConnections: ZohoConnectionService,
 	) {}
 
 	async runDue(): Promise<TickSummary> {
@@ -46,6 +51,7 @@ export class MailboxSyncService {
 
 		await this.googleConnections.reconcileAll();
 		await this.microsoftConnections.reconcileAll();
+		await this.zohoConnections.reconcileAll();
 
 		const due = await this.state.due(new Date());
 
@@ -63,7 +69,7 @@ export class MailboxSyncService {
 			summary.attempted += 1;
 
 			try {
-				const outcome = await this.runOne(row.userId, row.source);
+				const outcome = await this.runOne(row.id, row.source);
 
 				if (outcome === null || outcome.status === "skipped") {
 					summary.skipped += 1;
@@ -112,12 +118,14 @@ export class MailboxSyncService {
 		return summary;
 	}
 
-	private async runOne(userId: string, source: string) {
-		if (isGoogleSyncSource(source)) return this.google.runOne(userId, source);
+	private async runOne(syncId: string, source: string) {
+		if (isGoogleSyncSource(source)) return this.google.runOne(syncId, source);
 
 		if (isMicrosoftSyncSource(source)) {
-			return this.microsoft.runOne(userId, source);
+			return this.microsoft.runOne(syncId, source);
 		}
+
+		if (isZohoSyncSource(source)) return this.zoho.runOne(syncId);
 
 		return null;
 	}
