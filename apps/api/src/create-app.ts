@@ -4,6 +4,7 @@ import {
 	ExpressAdapter,
 	type NestExpressApplication,
 } from "@nestjs/platform-express";
+import express from "express";
 import helmet from "helmet";
 import { AppModule } from "./app.module";
 import { ContextLogger } from "./logging/context-logger";
@@ -16,6 +17,7 @@ export async function createApp(): Promise<NestExpressApplication> {
 	);
 
 	app.use(helmet());
+	app.use("/api/v1", express.json({ limit: "1mb" }));
 	app.useGlobalPipes(
 		new ValidationPipe({
 			whitelist: true,

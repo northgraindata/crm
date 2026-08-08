@@ -134,6 +134,25 @@ self-hoster's admin cannot redeploy.
   Only `check-types` and `dev` run it. If the app cannot see a new procedure, it has
   not run.
 
+## External API
+
+External integrations use the versioned REST surface at `/api/v1/*`. Create a
+personal access token in Settings → API access, then send it as
+`Authorization: Bearer crm_pat_…`.
+
+- `GET /api/v1/me` returns the token owner.
+- `GET|POST|PATCH|DELETE /api/v1/companies` and `/api/v1/companies/:id` manage companies.
+- `GET|POST|PATCH|DELETE /api/v1/contacts` and `/api/v1/contacts/:id` manage contacts.
+- `GET|POST|PATCH|DELETE /api/v1/deals` and `/api/v1/deals/:id` manage deals.
+- `crm:read` permits reads; `crm:write` permits reads and writes.
+
+Only a hash of each token is stored. The plaintext token is shown once when it
+is created and can be revoked from Settings. Tokens may have an expiry date.
+The public web hostname is sufficient, for example
+`https://crm.example.com/api/v1`; a separate `api.` hostname is optional. A
+browser-based client on another origin must have that origin included in the
+comma-separated `APP_URL` allow-list. Server-to-server clients do not need CORS.
+
 ## Two mail providers, one pipeline
 
 `apps/api/src/mailbox` is everything no individual provider owns:

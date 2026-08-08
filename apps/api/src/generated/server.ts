@@ -15,6 +15,7 @@ const t = initTRPC.create();
 const publicProcedure = t.procedure;
 import { timelineInput, timelineCountsInput, myTasksInput, activityCreateInput, completeInput } from "../activities/activities.contracts";
 import { agentIdInput, agentHistoryInput, agentUpdateInput, agentDeployInput, agentRunNowInput } from "../agent/agents.contracts";
+import { createApiTokenInput, revokeApiTokenInput } from "../api-access/api-access.contracts";
 import { companyListInput, companyIdInput, companyOptionsInput, companyCreateInput, companyUpdateArgs, companyBulkOwnerInput, companyBulkInput, setPrimaryContactInput } from "../companies/companies.contracts";
 import { contactListInput, contactIdInput, contactCreateInput, contactUpdateArgs, contactBulkOwnerInput, contactBulkCompanyInput, contactBulkInput, factDecisionInput } from "../contacts/contacts.contracts";
 import { conversationListInput, builderResourceSearchInput, conversationIdInput, conversationEventsInput, conversationSaveInput, builderConversationCreateInput, builderConversationSubmitInput, builderQuestionResponseInput, builderResponseRatingInput, sharedConversationInput } from "../conversations/conversations.contracts";
@@ -30,6 +31,7 @@ import { memberListInput, updateWorkspaceInput, setMemberRoleInput } from "../wo
 import { zohoConnectionInput, setZohoAutoCreateInput } from "../zoho/zoho.contracts";
 import type { ActivitiesRouter } from "../activities/activities.router";
 import type { AgentsRouter } from "../agent/agents.router";
+import type { ApiAccessRouter } from "../api-access/api-access.router";
 import type { CompaniesRouter } from "../companies/companies.router";
 import type { ContactsRouter } from "../contacts/contacts.router";
 import type { ConversationsRouter } from "../conversations/conversations.router";
@@ -100,6 +102,16 @@ const appRouter = t.router({
     runNow: publicProcedure
       .input(agentRunNowInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<AgentsRouter["runNow"]>>)
+    }),
+  apiAccess: t.router({
+    tokens: publicProcedure
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<ApiAccessRouter["tokens"]>>),
+    createToken: publicProcedure
+      .input(createApiTokenInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<ApiAccessRouter["createToken"]>>),
+    revokeToken: publicProcedure
+      .input(revokeApiTokenInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<ApiAccessRouter["revokeToken"]>>)
     }),
   companies: t.router({
     list: publicProcedure

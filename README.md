@@ -368,6 +368,11 @@ the whole CRM uses one hostname and one same-origin session cookie.
 5. Deploy. Coolify generates the database, Redis, bridge and cron secrets; the
    one-shot `migrate` service applies migrations before the API starts.
 
+External apps can use the same web hostname at `https://<your-domain>/api/v1`.
+Create scoped personal access tokens in Settings → API access. A separate API
+subdomain is optional; if a browser client is hosted elsewhere, add its origin
+to the comma-separated `APP_URL` value so CORS allows it.
+
 `RAPIDAPI_KEY`, `GITHUB_TOKEN` and `BLOB_READ_WRITE_TOKEN` are optional. The Context
 key is entered during onboarding rather than configured in Coolify. Telemetry is off
 by default in this Compose stack.

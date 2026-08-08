@@ -35,6 +35,7 @@ used for type checking only (`bun run check-types`).
 | `/auth/me`       | required   | Cached profile of the signed-in user          |
 | `/auth/session`  | optional   | Whether the caller is signed in               |
 | `/health`        | anonymous  | 200 with a database round-trip, 503 otherwise |
+| `/api/v1/*`      | bearer token | Versioned external API; use a `crm_pat_…` token from Settings → API access |
 | `/internal/sync/google` | `CRON_SECRET` bearer | Vercel Cron entrypoint for Gmail/Calendar sync. Fails closed when the secret is unset. |
 
 ## How auth is wired
@@ -43,6 +44,10 @@ This process owns authentication. It mounts `/api/auth/*` and is the only one
 that writes session cookies; the Next.js app in `apps/app` reads those sessions
 straight from Postgres via `@crm/auth` and calls the routes above with
 `credentials: "include"`.
+
+The external `/api/v1/*` routes use scoped personal access tokens instead of
+session cookies. The route-scoped JSON parser keeps Better Auth's raw request
+body handling intact.
 
 `AuthModule.forRoot({ auth })` mounts the Better Auth handler and registers a
 **global** `AuthGuard`, so every route is protected unless it opts out:

@@ -13,15 +13,16 @@ generator client {
 }
 
 model User {
-  id            String    @id
+  id            String     @id
   name          String
   email         String
-  emailVerified Boolean   @default(false)
+  emailVerified Boolean    @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
   sessions      Session[]
   accounts      Account[]
+  apiTokens     ApiToken[]
 
   ownedCompanies Company[]           @relation("CompanyOwner")
   ownedContacts  Contact[]           @relation("ContactOwner")
@@ -109,6 +110,23 @@ model RateLimit {
 
   @@unique([key])
   @@map("rateLimit")
+}
+
+model ApiToken {
+  id          String    @id
+  name        String
+  tokenHash   String    @unique
+  tokenPrefix String
+  scopes      String[]
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, revokedAt])
+  @@map("apiToken")
 }
 
 enum DealStage {

@@ -13,6 +13,7 @@ import { requireSession } from "@/lib/session";
 import { HydrateClient } from "@/lib/trpc/hydrate";
 import { getServerQueryClient, getServerTrpc } from "@/lib/trpc/server";
 import { AgentModel } from "./agent-model";
+import { ApiAccess } from "./api-access";
 import { ResearchKey } from "./research-key";
 import { WorkspaceForm } from "./workspace-form";
 
@@ -52,6 +53,7 @@ async function Settings() {
 		queryClient.prefetchQuery(trpc.settings.agentModel.queryOptions()),
 		queryClient.prefetchQuery(trpc.settings.modelCatalog.queryOptions()),
 		queryClient.prefetchQuery(trpc.settings.researchKey.queryOptions()),
+		queryClient.prefetchQuery(trpc.apiAccess.tokens.queryOptions()),
 	]);
 
 	return (
@@ -60,6 +62,7 @@ async function Settings() {
 				<WorkspaceForm />
 				<ResearchKey />
 				<AgentModel />
+				<ApiAccess />
 			</div>
 		</HydrateClient>
 	);
