@@ -175,7 +175,7 @@ describe("permittedErrorClass", () => {
 
 describe("permittedModelId", () => {
 	it("keeps a model slug", () => {
-		expect(permittedModelId("zai/glm-5.2-fast")).toBe("zai/glm-5.2-fast");
+		expect(permittedModelId("z-ai/glm-5.2")).toBe("z-ai/glm-5.2");
 	});
 
 	it("buckets anything else", () => {

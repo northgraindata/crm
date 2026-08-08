@@ -1,22 +1,158 @@
+x-crm-image: &crm-image
+  image: northgrain-crm:${SOURCE_COMMIT:-release}
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      API_URL: http://api:3001
+      AGENT_URL: http://agent:2000
+
+x-crm-environment: &crm-environment
+  NODE_ENV: production
+  DATABASE_URL: postgresql://crm:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/crm?schema=public
+  REDIS_URL: redis://:${SERVICE_PASSWORD_REDIS}@redis:6379
+  AGENT_URL: http://agent:2000
+  APP_URL: ${SERVICE_URL_WEB_3000}
+  BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a random secret of at least 32 characters}
+  ALLOWED_SIGN_IN: ${ALLOWED_SIGN_IN:?Set an allowed email address or domain}
+  AGENT_BRIDGE_SECRET: ${SERVICE_REALBASE64_64_AGENT}
+  CRON_SECRET: ${SERVICE_PASSWORD_64_CRON}
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?Create a key at openrouter.ai/settings/keys}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+  MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+  MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
+  RAPIDAPI_KEY: ${RAPIDAPI_KEY:-}
+  GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+  BLOB_READ_WRITE_TOKEN: ${BLOB_READ_WRITE_TOKEN:-}
+  IS_MARKETING: ${IS_MARKETING:-false}
+  CRM_TELEMETRY_DISABLED: ${CRM_TELEMETRY_DISABLED:-1}
 
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: crm-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
       POSTGRES_DB: crm
-    ports:
-      - "5432:5432"
     volumes:
-      - crm-postgres:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d crm"]
-      interval: 3s
+      test: ["CMD-SHELL", "pg_isready -U crm -d crm"]
+      interval: 10s
       timeout: 5s
-      retries: 20
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${SERVICE_PASSWORD_REDIS}"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH='${SERVICE_PASSWORD_REDIS}' redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  migrate:
+    <<: *crm-image
+    restart: "no"
+    exclude_from_hc: true
+    environment:
+      <<: *crm-environment
+    command: ["bun", "run", "db:deploy"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *crm-image
+    restart: unless-stopped
+    environment:
+      <<: *crm-environment
+      API_URL: ${SERVICE_URL_WEB_3000}
+      PORT: "3001"
+    command: ["bun", "run", "--cwd", "apps/api", "start:prod"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  agent:
+    <<: *crm-image
+    restart: unless-stopped
+    environment:
+      <<: *crm-environment
+      AGENT_PORT: "2000"
+    command: ["bun", "run", "--cwd", "apps/agent", "start"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:2000/eve/v1/info"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  web:
+    <<: *crm-image
+    restart: unless-stopped
+    environment:
+      <<: *crm-environment
+      API_URL: http://api:3001
+      NEXT_PUBLIC_API_URL: http://api:3001
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      SERVICE_URL_WEB_3000: ${SERVICE_URL_WEB_3000}
+    command: ["bun", "run", "--cwd", "apps/app", "start"]
+    depends_on:
+      api:
+        condition: service_healthy
+      agent:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/sign-in"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  cron:
+    image: curlimages/curl:8.16.0
+    restart: unless-stopped
+    exclude_from_hc: true
+    environment:
+      CRON_SECRET: ${SERVICE_PASSWORD_64_CRON}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        ticks=288
+        while true; do
+          curl -fsS -X POST -H "Authorization: Bearer $$CRON_SECRET" http://api:3001/internal/sync/mailboxes || true
+          if [ "$$ticks" -ge 288 ]; then
+            curl -fsS -X POST -H "Authorization: Bearer $$CRON_SECRET" http://api:3001/internal/sync/rates || true
+            ticks=0
+          fi
+          ticks=$$((ticks + 1))
+          sleep 300
+        done
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
-  crm-postgres:
+  postgres-data:
+  redis-data:

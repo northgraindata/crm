@@ -1,4 +1,4 @@
-const ENDPOINT = "https://api.perplexity.ai/chat/completions";
+const ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 const TIMEOUT_MS = 45_000;
 
 export type Answer = {
@@ -9,11 +9,11 @@ export type Answer = {
 type Outcome<T> = { ok: true; data: T } | { ok: false; reason: string };
 
 export function perplexityEnabled(): boolean {
-	return Boolean(process.env.PERPLEXITY_API_KEY);
+	return Boolean(process.env.OPENROUTER_API_KEY);
 }
 
 export type AskOptions = {
-	model?: "sonar" | "sonar-pro";
+	model?: "perplexity/sonar" | "perplexity/sonar-pro";
 	domains?: string[];
 	system?: string;
 };
@@ -22,8 +22,8 @@ export async function ask(
 	question: string,
 	options: AskOptions = {},
 ): Promise<Outcome<Answer>> {
-	const apiKey = process.env.PERPLEXITY_API_KEY;
-	if (!apiKey) return { ok: false, reason: "No PERPLEXITY_API_KEY." };
+	const apiKey = process.env.OPENROUTER_API_KEY;
+	if (!apiKey) return { ok: false, reason: "No OPENROUTER_API_KEY." };
 
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -37,14 +37,23 @@ export async function ask(
 			},
 			signal: controller.signal,
 			body: JSON.stringify({
-				model: options.model ?? "sonar",
+				model: options.model ?? "perplexity/sonar",
 				messages: [
 					...(options.system
 						? [{ role: "system", content: options.system }]
 						: []),
 					{ role: "user", content: question },
 				],
-				...(options.domains ? { search_domain_filter: options.domains } : {}),
+				tools: [
+					{
+						type: "openrouter:web_search",
+						parameters: {
+							engine: "perplexity",
+							max_results: 5,
+							...(options.domains ? { allowed_domains: options.domains } : {}),
+						},
+					},
+				],
 			}),
 		});
 
@@ -53,7 +62,15 @@ export async function ask(
 		}
 
 		const body = (await response.json()) as {
-			choices?: { message?: { content?: string } }[];
+			choices?: {
+				message?: {
+					content?: string;
+					annotations?: {
+						type?: string;
+						url_citation?: { url?: string };
+					}[];
+				};
+			}[];
 			citations?: string[];
 			search_results?: { url?: string }[];
 		};
@@ -61,11 +78,20 @@ export async function ask(
 		const text = body.choices?.[0]?.message?.content?.trim() ?? "";
 		if (!text) return { ok: false, reason: "Empty answer." };
 
-		const citations =
-			body.citations ??
-			(body.search_results ?? []).flatMap((r) => (r.url ? [r.url] : []));
+		const annotations = body.choices?.[0]?.message?.annotations ?? [];
+		const citations = [
+			...(body.citations ?? []),
+			...(body.search_results ?? []).flatMap((result) =>
+				result.url ? [result.url] : [],
+			),
+			...annotations.flatMap((annotation) =>
+				annotation.type === "url_citation" && annotation.url_citation?.url
+					? [annotation.url_citation.url]
+					: [],
+			),
+		];
 
-		return { ok: true, data: { text, citations } };
+		return { ok: true, data: { text, citations: [...new Set(citations)] } };
 	} catch (error) {
 		const aborted = error instanceof Error && error.name === "AbortError";
 		return {

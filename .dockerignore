@@ -1,0 +1,14 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+**/node_modules
+**/.next
+**/.turbo
+**/.eve
+**/.output
+**/.vercel
+**/dist
+baserow_code
+tests

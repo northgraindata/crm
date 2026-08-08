@@ -18,11 +18,13 @@
 		"clean": "rm -rf .turbo .eve node_modules"
 	},
 	"dependencies": {
+		"@openrouter/ai-sdk-provider": "^3.0.0",
 		"@crm/db": "workspace:*",
 		"@crm/env": "workspace:*",
 		"@crm/telemetry": "workspace:*",
 		"context.dev": "^2.7.0",
 		"eve": "^0.29.4",
+		"ai": "^7.0.47",
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {

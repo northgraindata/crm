@@ -20,7 +20,7 @@ import { Prisma, type User } from "@crm/db";
 ## Setup
 
 ```bash
-docker compose up -d       # Postgres matching the DATABASE_URL in .env.example
+docker compose -f docker-compose.dev.yml up -d  # Postgres matching .env.example
 cp .env.example .env       # at the repo root
 bun run db:generate        # generate Prisma Client
 bun run db:deploy          # apply the migrations

@@ -29,8 +29,9 @@ metadata. The root file's comment has the whole account.
 
 ## Required
 
-`DATABASE_URL`, `BETTER_AUTH_SECRET`, `ALLOWED_SIGN_IN`. Everything else has a
-localhost default or is genuinely optional.
+`DATABASE_URL`, `BETTER_AUTH_SECRET`, `ALLOWED_SIGN_IN`, and
+`OPENROUTER_API_KEY` when the agent is deployed. Everything else has a localhost
+default or is genuinely optional.
 
 **`GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`** are the sign-in button *and* the
 Gmail/Calendar sync — optional, so an SSO-only install needn't create a Google project,
@@ -86,19 +87,19 @@ and lists every variable the API reads and nothing else.
   importing it (see the dynamic `import()` in `test/auth.e2e.spec.ts`).
 - **The schema is the API's, not the repo's** — `@crm/auth` and the agent read their own.
 
-## Optional: what the agent can do
+## Agent model and optional research sources
 
-Every outside source is optional and the agent runs with none. A missing key removes a
-place to look; **never an error, never throws**. `agent/lib/capabilities.ts` is the
-single place that knows what is set.
+OpenRouter runs the model and is required for useful agent sessions. Every other
+outside source is optional. A missing research key removes a place to look; **never an
+error, never throws**. `agent/lib/capabilities.ts` is the single place that knows what
+is set.
 
 | Variable | What it adds |
 | --- | --- |
-| `PERPLEXITY_API_KEY` | Open-web research with citations; finds a LinkedIn slug |
+| `OPENROUTER_API_KEY` | The agent model plus Perplexity Sonar web research with citations |
 | `RAPIDAPI_KEY` | LinkedIn profiles via LinkDAPI |
 | `GITHUB_TOKEN` | Raises the GitHub rate limit from 60/hour |
 | `BLOB_READ_WRITE_TOKEN` | Mirrors logos and photos into Blob |
-| `AI_GATEWAY_API_KEY` | The model. Not needed on Vercel (OIDC) |
 | `AGENT_BRIDGE_SECRET` | The rep-facing Agent panel — see `agent.md` |
 
 `BLOB_READ_WRITE_TOKEN` is also in `env.validation.ts` and `apps/api/turbo.json`

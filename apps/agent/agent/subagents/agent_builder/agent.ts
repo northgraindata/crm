@@ -1,15 +1,18 @@
 import { DEFAULT_AGENT_MODEL } from "@crm/db/settings";
-import { defineAgent, defineDynamic } from "eve";
+import { type AgentDefinition, defineAgent, defineDynamic } from "eve";
 import { z } from "zod";
-import { selectedModel } from "../../lib/model";
+import { openRouterModel, selectedModel } from "../../lib/model";
 
-export default defineAgent({
+const agent: AgentDefinition = defineAgent({
 	description:
 		"Turn one private CRM builder-chat request into a validated, reviewable team-agent version without deploying it.",
 	model: defineDynamic({
-		fallback: DEFAULT_AGENT_MODEL.id,
-		events: { "session.started": () => selectedModel() },
+		fallback: openRouterModel(DEFAULT_AGENT_MODEL.id),
+		events: {
+			"step.started": (_event, ctx) => selectedModel(ctx.session.id),
+		},
 	}),
+	modelContextWindowTokens: DEFAULT_AGENT_MODEL.contextWindowTokens,
 	outputSchema: z.discriminatedUnion("status", [
 		z.object({
 			status: z.literal("needs_input"),
@@ -37,3 +40,5 @@ export default defineAgent({
 		sessionTimeoutMs: 24 * 60 * 60 * 1000,
 	},
 });
+
+export default agent;

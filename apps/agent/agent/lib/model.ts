@@ -1,19 +1,29 @@
 import { db } from "@crm/db";
 import { readAgentModel } from "@crm/db/settings";
+import { openrouter } from "@openrouter/ai-sdk-provider";
 
 export interface ModelSelection {
-	model: string;
+	model: ReturnType<typeof openrouter.chat>;
 	modelContextWindowTokens: number;
 }
 
-export async function selectedModel(): Promise<ModelSelection | null> {
+const selections = new Map<string, Promise<ModelSelection | null>>();
+const MAX_CACHED_SESSIONS = 1_000;
+
+export function openRouterModel(
+	id: string,
+): ReturnType<typeof openrouter.chat> {
+	return openrouter.chat(id);
+}
+
+async function readSelectedModel(): Promise<ModelSelection | null> {
 	try {
 		const setting = await readAgentModel(db);
 
 		if (setting.isDefault) return null;
 
 		return {
-			model: setting.id,
+			model: openRouterModel(setting.id),
 			modelContextWindowTokens: setting.contextWindowTokens,
 		};
 	} catch (error) {
@@ -24,4 +34,20 @@ export async function selectedModel(): Promise<ModelSelection | null> {
 		);
 		return null;
 	}
+}
+
+export function selectedModel(
+	sessionId: string,
+): Promise<ModelSelection | null> {
+	const cached = selections.get(sessionId);
+	if (cached) return cached;
+
+	if (selections.size >= MAX_CACHED_SESSIONS) {
+		const oldest = selections.keys().next().value;
+		if (oldest) selections.delete(oldest);
+	}
+
+	const selection = readSelectedModel();
+	selections.set(sessionId, selection);
+	return selection;
 }

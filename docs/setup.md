@@ -8,7 +8,7 @@ reads once.
 
 ```sh
 cp .env.example .env        # fill DATABASE_URL, BETTER_AUTH_SECRET, ALLOWED_SIGN_IN
-docker compose up -d        # Postgres, matching .env.example
+docker compose -f docker-compose.dev.yml up -d  # Postgres, matching .env.example
 bun run db:migrate && bun run db:seed
 bun run dev                 # app :3000, api :3001, agent :2000
 ```

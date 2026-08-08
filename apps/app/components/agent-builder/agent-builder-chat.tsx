@@ -1012,11 +1012,11 @@ function BuilderFailureCard({
 }) {
 	const message =
 		failure.kind === "rate-limit"
-			? "Vercel AI Gateway rate-limited this model before it could start. Try again in a moment or add AI Gateway credits in Vercel."
+			? "OpenRouter rate-limited this model before it could start. Try again in a moment or add OpenRouter credits."
 			: failure.kind === "restricted"
-				? "This model requires paid AI Gateway credits. Add credits in Vercel, then try again."
+				? "This model requires paid OpenRouter credits. Add credits, then try again."
 				: failure.kind === "credits"
-					? "Vercel AI Gateway has no available credits. Add credits in Vercel, then try again."
+					? "OpenRouter has no available credits. Add credits, then try again."
 					: "The builder could not finish this request. Try again.";
 
 	return (

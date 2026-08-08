@@ -13,8 +13,8 @@ export default defineTool({
 		companyName: z.string().describe("The company the CRM has them at."),
 	}),
 	async execute({ email, companyName }) {
-		if (!(await enabled("PERPLEXITY_API_KEY"))) {
-			return { candidateSlugs: [], ...unavailable("PERPLEXITY_API_KEY") };
+		if (!(await enabled("OPENROUTER_API_KEY"))) {
+			return { candidateSlugs: [], ...unavailable("OPENROUTER_API_KEY") };
 		}
 
 		const charge = spend();

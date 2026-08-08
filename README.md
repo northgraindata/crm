@@ -96,8 +96,8 @@ agent wants another look at somebody it calls `schedule_recheck` and says why �
 the reason is shown to the rep, because an agent that cannot say why it will be back
 in fourteen days does not have a reason, it has a default.
 
-**Every outside source is optional, and it is designed to run with none of them.**
-With no API keys at all it still works: `read_crm_history` reads your own threads,
+**Every outside enrichment source is optional.** The agent model itself needs an
+OpenRouter key. With no research-vendor keys it still works: `read_crm_history` reads your own threads,
 meetings and signature blocks, which is free and is the best evidence there is — no
 data vendor can sell you a reply from the person's own address. Each key opens one
 more place to look. It is told at the start of every session which ones this install
@@ -106,7 +106,7 @@ failed call at a time, and it prints the list at startup:
 
 ```
 [agent] on   LinkedIn (RAPIDAPI_KEY)
-[agent] off  Web research (PERPLEXITY_API_KEY)
+[agent] off  Web research (OPENROUTER_API_KEY)
 [agent] off  Company brand data (Settings → General)
 ```
 
@@ -146,7 +146,7 @@ A [Turborepo](https://turborepo.dev) monorepo on [Bun](https://bun.com), deploye
 | | |
 | --- | --- |
 | **Agent** | [eve](https://eve.dev) — durable sessions, tools, skills, schedules, sandboxes |
-| **Model** | [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) — no provider SDK, and OIDC on Vercel means no key to manage |
+| **Model** | [OpenRouter](https://openrouter.ai/) — one key for model access and Perplexity Sonar research |
 | **Sandbox** | [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) in production, Docker or microsandbox locally |
 | **Front end** | [Next.js](https://nextjs.org) App Router · [shadcn/ui](https://ui.shadcn.com) · [nuqs](https://nuqs.dev) for URL state |
 | **API** | [NestJS](https://nestjs.com) with [nestjs-trpc](https://nestjs-trpc.io) — HTTP, auth, tRPC, mailbox sync |
@@ -190,11 +190,11 @@ Written up where the work happens, not in a style guide:
 You need [Bun](https://bun.com) and Docker.
 
 ```sh
-git clone https://github.com/trycompai/crm.git && cd crm
+git clone https://github.com/northgraindata/crm.git && cd crm
 cp .env.example .env          # then fill in the values below
 bun install
 
-docker compose up -d          # Postgres on :5432
+docker compose -f docker-compose.dev.yml up -d  # Postgres on :5432
 
 bun run db:deploy             # apply migrations
 bun run db:seed               # optional: a believable pipeline to look at
@@ -217,6 +217,7 @@ Open `.env` and set these. Everything else in the file is optional and commented
 | ------------------------------------------ | -------------------------------------------------------------------- |
 | `BETTER_AUTH_SECRET`                       | `openssl rand -base64 32`                                             |
 | `ALLOWED_SIGN_IN`                          | Your email domain, e.g. `acme.com`. Or one address, e.g. `you@gmail.com`. |
+| `OPENROUTER_API_KEY`                       | An API key from [OpenRouter](https://openrouter.ai/settings/keys).     |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`| A Google OAuth client — 2 minutes, below. Both or neither.             |
 | `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET` | A Microsoft Entra app registration — below. Both or neither. |
 
@@ -301,14 +302,13 @@ ALLOWED_SIGN_IN="you@gmail.com"                  # a one-person install
 environment variables always win, so on a hosting platform you configure it there and
 the file is purely a local convenience.
 
-Beyond the values above, everything is optional and the app runs without any
-of it. [`.env.example`](./.env.example) is the full list with a note on each; the
+Beyond the required values above, everything is optional. [`.env.example`](./.env.example) is the full list with a note on each; the
 short version:
 
 | | |
 | --- | --- |
 | `API_URL` / `APP_URL` | Where the two halves are served. Only needed off localhost. |
-| `PERPLEXITY_API_KEY` | Lets the agent search the open web, with citations. |
+| `OPENROUTER_API_KEY` | Runs the agent model and Perplexity Sonar web research with citations. |
 | `RAPIDAPI_KEY` | Lets the agent read LinkedIn profiles for identity. |
 | `AGENT_BRIDGE_SECRET` | Lets a rep talk to the agent from a contact's **Agent** tab. |
 | `REDIS_URL` | A shared cache. Without it, per-instance and in-memory. |
@@ -338,17 +338,25 @@ would have set. It refuses to run with `NODE_ENV=production`.
 
 ## Deploying
 
-Three deployments and a Postgres: the Next.js app, the NestJS API, and the agent.
-They are independent, and the only thing they must agree on is `DATABASE_URL` and
-`BETTER_AUTH_SECRET` — the API mints the session cookie and the app verifies it, so a
-mismatch is a redirect loop rather than an error.
+### Coolify
 
-Set `API_URL` and `APP_URL` to the real origins, and if the two are on different
-subdomains of one parent, set `AUTH_COOKIE_DOMAIN` to the parent so one cookie covers
-both. Add `http://your-api-host/api/auth/callback/google` — and, if you use Microsoft,
-`http://your-api-host/api/auth/callback/microsoft` — to the provider's
-redirect URIs. Set `CRON_SECRET` and point a scheduler at
-`POST /internal/sync/mailboxes` to keep the mailbox sync running.
+The root [`docker-compose.yml`](./docker-compose.yml) is the complete production
+stack: web, API, agent, migrations, mailbox/rate cron, Postgres and Redis. Only the
+web service is public. It proxies `/api/*` and `/eve/*` to the private services, so
+the whole CRM uses one hostname and one same-origin session cookie.
+
+1. Create a Docker Compose application from this repository and select `release`.
+2. Use `docker-compose.yml` and attach your domain to the `web` service on port 3000.
+3. Set `BETTER_AUTH_SECRET`, `ALLOWED_SIGN_IN` and `OPENROUTER_API_KEY` in Coolify.
+4. Set either the Google or Microsoft client ID and secret. Register
+   `https://<your-domain>/api/auth/callback/google` or
+   `https://<your-domain>/api/auth/callback/microsoft` with that provider.
+5. Deploy. Coolify generates the database, Redis, bridge and cron secrets; the
+   one-shot `migrate` service applies migrations before the API starts.
+
+`RAPIDAPI_KEY`, `GITHUB_TOKEN` and `BLOB_READ_WRITE_TOKEN` are optional. The Context
+key is entered during onboarding rather than configured in Coolify. Telemetry is off
+by default in this Compose stack.
 
 `apps/api/src/generated/server.ts` is committed and `build` must never regenerate it —
 the generator needs a newer GLIBC than most build images have. Regenerate locally and
