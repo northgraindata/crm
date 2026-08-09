@@ -115,7 +115,27 @@ export class EnvironmentVariables {
 
 	@IsOptional()
 	@IsString()
-	BLOB_READ_WRITE_TOKEN?: string;
+	STORAGE_ENDPOINT?: string;
+
+	@IsOptional()
+	@IsString()
+	STORAGE_REGION?: string;
+
+	@IsOptional()
+	@IsString()
+	STORAGE_BUCKET?: string;
+
+	@IsOptional()
+	@IsString()
+	STORAGE_ACCESS_KEY_ID?: string;
+
+	@IsOptional()
+	@IsString()
+	STORAGE_SECRET_ACCESS_KEY?: string;
+
+	@IsOptional()
+	@IsString()
+	STORAGE_PUBLIC_URL?: string;
 
 	@IsOptional()
 	@IsUrl(

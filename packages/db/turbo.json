@@ -45,7 +45,15 @@
 		},
 		"db:seed": {
 			"cache": false,
-			"passThroughEnv": ["BLOB_READ_WRITE_TOKEN", "DATABASE_URL"]
+			"passThroughEnv": [
+				"STORAGE_ENDPOINT",
+				"STORAGE_REGION",
+				"STORAGE_BUCKET",
+				"STORAGE_ACCESS_KEY_ID",
+				"STORAGE_SECRET_ACCESS_KEY",
+				"STORAGE_PUBLIC_URL",
+				"DATABASE_URL"
+			]
 		},
 		"db:studio": {
 			"cache": false,

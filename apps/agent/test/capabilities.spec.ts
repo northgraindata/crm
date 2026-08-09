@@ -10,7 +10,7 @@ import {
 const KEYS = [
 	"RAPIDAPI_KEY",
 	"OPENROUTER_API_KEY",
-	"BLOB_READ_WRITE_TOKEN",
+	"STORAGE_ENDPOINT",
 ] as const;
 
 const saved: Record<string, string | undefined> = {};

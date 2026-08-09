@@ -12,7 +12,7 @@ export const ALLOWED_PROPERTIES = [
 	"cap_rapidapi",
 	"cap_openrouter",
 	"cap_context_dev",
-	"cap_blob",
+	"cap_storage",
 	"cap_github",
 	"cap_redis",
 	"cap_agent_bridge",

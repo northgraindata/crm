@@ -22,7 +22,7 @@ export default defineTool({
 				stored: false as const,
 				configured: false as const,
 				reason:
-					"This install has no BLOB_READ_WRITE_TOKEN, so there is nowhere to keep a copy, and " +
+					"This install has no configured picture storage, so there is nowhere to keep a copy, and " +
 					"the source URLs expire. Retrying will not help.",
 			};
 		}

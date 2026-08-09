@@ -1,4 +1,9 @@
 import { createHash } from "node:crypto";
+import {
+	GetObjectCommand,
+	PutObjectCommand,
+	S3Client,
+} from "@aws-sdk/client-s3";
 import { isMirrored } from "./images";
 import { safeFetch } from "./safe-fetch";
 
@@ -6,6 +11,8 @@ export { isMirrored, isOptimizable } from "./images";
 
 const MAX_BYTES = 3 * 1024 * 1024;
 const TIMEOUT_MS = 15_000;
+
+let client: S3Client | null = null;
 
 const ALLOWED: Record<string, string> = {
 	"image/jpeg": "jpg",
@@ -19,7 +26,13 @@ const ALLOWED: Record<string, string> = {
 };
 
 export function blobEnabled(): boolean {
-	return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+	return Boolean(
+		process.env.STORAGE_ENDPOINT?.trim() &&
+			process.env.STORAGE_BUCKET?.trim() &&
+			process.env.STORAGE_ACCESS_KEY_ID?.trim() &&
+			process.env.STORAGE_SECRET_ACCESS_KEY?.trim() &&
+			process.env.STORAGE_PUBLIC_URL?.trim(),
+	);
 }
 
 export async function mirror(
@@ -46,19 +59,58 @@ export async function mirror(
 			.digest("hex")
 			.slice(0, 12);
 
-		const { put } = await import("@vercel/blob");
+		const key = `${prefix}-${digest}.${extension}`;
+		await storageClient().send(
+			new PutObjectCommand({
+				Bucket: process.env.STORAGE_BUCKET,
+				Key: key,
+				Body: bytes,
+				ContentType: type,
+				CacheControl: "public, max-age=31536000, immutable",
+			}),
+		);
 
-		const blob = await put(`${prefix}-${digest}.${extension}`, bytes, {
-			access: "public",
-			contentType: type,
-			addRandomSuffix: false,
-			allowOverwrite: true,
-		});
-
-		return blob.url;
+		return `${process.env.STORAGE_PUBLIC_URL?.replace(/\/$/, "")}/${key}`;
 	} catch {
 		return null;
 	}
+}
+
+export async function read(key: string): Promise<{
+	body: ReadableStream<Uint8Array> | null;
+	contentType: string | undefined;
+} | null> {
+	if (!blobEnabled()) return null;
+
+	try {
+		const result = await storageClient().send(
+			new GetObjectCommand({
+				Bucket: process.env.STORAGE_BUCKET,
+				Key: key,
+			}),
+		);
+		return {
+			body: result.Body?.transformToWebStream() as ReadableStream<Uint8Array> | null,
+			contentType: result.ContentType,
+		};
+	} catch {
+		return null;
+	}
+}
+
+function storageClient(): S3Client {
+	if (!client) {
+		client = new S3Client({
+			endpoint: process.env.STORAGE_ENDPOINT,
+			region: process.env.STORAGE_REGION ?? "us-east-1",
+			forcePathStyle: true,
+			credentials: {
+				accessKeyId: process.env.STORAGE_ACCESS_KEY_ID ?? "",
+				secretAccessKey: process.env.STORAGE_SECRET_ACCESS_KEY ?? "",
+			},
+		});
+	}
+	return client;
 }
 
 async function readCapped(response: Response): Promise<Buffer | null> {

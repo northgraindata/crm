@@ -5,8 +5,8 @@ import { brandToUpdate } from "../agent/lib/brand-mapping";
 
 if (!blobEnabled()) {
 	console.warn(
-		"No BLOB_READ_WRITE_TOKEN — icon tone and dark artwork will still be " +
-			"filled in, but nothing will be copied into Blob.",
+		"No picture storage — icon tone and dark artwork will still be " +
+			"filled in, but nothing will be copied into storage.",
 	);
 }
 

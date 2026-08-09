@@ -1,6 +1,6 @@
 import type { Db, Prisma } from "@crm/db";
 import { blobEnabled, mirror } from "@crm/db/blob";
-import { BLOB_HOST_SUFFIX, COMPANY_IMAGE_FIELDS } from "@crm/db/images";
+import { COMPANY_IMAGE_FIELDS, isMirrored } from "@crm/db/images";
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectDatabase } from "../database/database.constants";
 
@@ -64,7 +64,7 @@ export class ImageMirrorService {
 
 			for (const field of COMPANY_IMAGE_FIELDS) {
 				const current = row[field];
-				if (!current) continue;
+				if (!current || isMirrored(current)) continue;
 
 				const stored = await mirror(current, `companies/${row.id}/${field}`);
 				if (!stored || stored === current) continue;
@@ -95,7 +95,7 @@ export class ImageMirrorService {
 		let copied = 0;
 
 		for (const row of rows) {
-			if (!row.imageUrl) continue;
+			if (!row.imageUrl || isMirrored(row.imageUrl)) continue;
 
 			const stored = await mirror(row.imageUrl, `contacts/${row.id}`);
 			if (!stored || stored === row.imageUrl) continue;
@@ -121,7 +121,7 @@ export class ImageMirrorService {
 		let copied = 0;
 
 		for (const row of rows) {
-			if (!row.image) continue;
+			if (!row.image || isMirrored(row.image)) continue;
 
 			const stored = await mirror(row.image, `users/${row.id}/avatar`);
 			if (!stored || stored === row.image) continue;
@@ -138,16 +138,8 @@ export class ImageMirrorService {
 	}
 }
 
-function external<T extends string>(
-	field: T,
-): Record<T, { not: null }> & { NOT: Record<T, { contains: string }> } {
-	return {
-		...({ [field]: { not: null } } as Record<T, { not: null }>),
-		NOT: { [field]: { contains: BLOB_HOST_SUFFIX } } as Record<
-			T,
-			{ contains: string }
-		>,
-	};
+function external<T extends string>(field: T): Record<T, { not: null }> {
+	return { [field]: { not: null } } as Record<T, { not: null }>;
 }
 
 function unchanged(row: Record<string, unknown>): Prisma.CompanyWhereInput {

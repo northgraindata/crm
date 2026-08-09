@@ -96,7 +96,7 @@ whose event never arrived, which cannot be recovered.
 
 #### Capabilities — booleans, never values
 
-`cap_rapidapi`, `cap_openrouter`, `cap_context_dev`, `cap_blob`, `cap_github`, `cap_redis`,
+`cap_rapidapi`, `cap_openrouter`, `cap_context_dev`, `cap_storage`, `cap_github`, `cap_redis`,
 `cap_agent_bridge`, `cap_cron_secret`, `cap_google_oauth`, `cap_microsoft_oauth`,
 `cap_zoho_oauth`, `cap_sso_provider`, `is_marketing`.
 

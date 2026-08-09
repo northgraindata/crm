@@ -61,7 +61,7 @@ export function capabilitiesFrom(
 			enabled: contextDev !== null,
 		},
 		{
-			...fromEnv("BLOB_READ_WRITE_TOKEN"),
+			...fromEnv("STORAGE_ENDPOINT"),
 			label: "Picture storage",
 			gives:
 				"somewhere to keep a logo or a profile photo. Without it a record has no picture at all, because the URLs these sources hand back expire and are never stored as they are",

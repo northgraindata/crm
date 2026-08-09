@@ -152,7 +152,7 @@ A [Turborepo](https://turborepo.dev) monorepo on [Bun](https://bun.com), deploye
 | **API** | [NestJS](https://nestjs.com) with [nestjs-trpc](https://nestjs-trpc.io) — HTTP, auth, tRPC, mailbox sync |
 | **Data** | [Prisma](https://prisma.io) · Postgres ([Neon](https://neon.tech)) · optional Redis ([Upstash](https://upstash.com)) |
 | **Auth** | [Better Auth](https://better-auth.com) — local email/password or your own IdP; one allow-list |
-| **Files** | [Vercel Blob](https://vercel.com/docs/vercel-blob) — mirrors profile pictures so they survive the source going away |
+| **Files** | Self-hosted MinIO — mirrors profile pictures so they survive the source going away |
 | **Tooling** | [Biome](https://biomejs.dev) · TypeScript everywhere |
 
 The app talks to the API over **tRPC**, and the router type is generated from the
@@ -373,9 +373,10 @@ Create scoped personal access tokens in Settings → API access. A separate API
 subdomain is optional; if a browser client is hosted elsewhere, add its origin
 to the comma-separated `APP_URL` value so CORS allows it.
 
-`RAPIDAPI_KEY`, `GITHUB_TOKEN` and `BLOB_READ_WRITE_TOKEN` are optional. The Context
-key is entered during onboarding rather than configured in Coolify. Telemetry is off
-by default in this Compose stack.
+`RAPIDAPI_KEY` and `GITHUB_TOKEN` are optional. MinIO and its persistent volume are
+included in this Compose stack, so no external Blob account or `STORAGE_*` values
+are required in Coolify. The Context key is entered during onboarding rather than
+configured in Coolify. Telemetry is off by default in this Compose stack.
 
 `apps/api/src/generated/server.ts` is committed and `build` must never regenerate it —
 the generator needs a newer GLIBC than most build images have. Regenerate locally and

@@ -8,6 +8,7 @@ import {
 	RecordSource,
 } from "@crm/db";
 import { RETIRED_OUTCOME } from "@crm/db/agent-tasks";
+import { blobEnabled } from "@crm/db/blob";
 import { readAgentModel } from "@crm/db/settings";
 import { WORKSPACE_ID } from "@crm/db/workspace";
 import {
@@ -150,7 +151,7 @@ export class RollupService {
 			cap_rapidapi: isSet("RAPIDAPI_KEY"),
 			cap_openrouter: isSet("OPENROUTER_API_KEY"),
 			cap_context_dev: Boolean(contextKey?.contextDevApiKey?.trim()),
-			cap_blob: isSet("BLOB_READ_WRITE_TOKEN"),
+			cap_storage: blobEnabled(),
 			cap_github: isSet("GITHUB_TOKEN"),
 			cap_redis: isSet("REDIS_URL"),
 			cap_agent_bridge: isSet("AGENT_BRIDGE_SECRET"),

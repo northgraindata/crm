@@ -101,12 +101,13 @@ is set.
 | `OPENROUTER_API_KEY` | The agent model plus Perplexity Sonar web research with citations |
 | `RAPIDAPI_KEY` | LinkedIn profiles via LinkDAPI |
 | `GITHUB_TOKEN` | Raises the GitHub rate limit from 60/hour |
-| `BLOB_READ_WRITE_TOKEN` | Mirrors logos and photos into Blob |
+| `STORAGE_*` | Mirrors logos and photos into the self-hosted S3-compatible storage |
 | `AGENT_BRIDGE_SECRET` | The rep-facing Agent panel — see `agent.md` |
 
-`BLOB_READ_WRITE_TOKEN` is also in `env.validation.ts` and `apps/api/turbo.json`
-because the API and the seed write pictures too. The Next.js app is deliberately
-excluded — recognising our URL for the image optimizer needs no token.
+`STORAGE_*` is also in `env.validation.ts` and the relevant Turbo pass-through lists
+because the API, agent and seed write pictures. The web app proxies `/media/*` to
+the private storage service, so the storage service itself does not need a public
+port or a separate domain.
 
 ### The Context key is asked for, not configured
 
