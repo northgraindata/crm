@@ -33,6 +33,7 @@ import { SyncModule } from "./sync/sync.module";
 import { TelemetryModule } from "./telemetry/telemetry.module";
 import { TrpcModule } from "./trpc/trpc.module";
 import { UsersModule } from "./users/users.module";
+import { WorkManagementModule } from "./work-management/work-management.module";
 import { WorkspaceModule } from "./workspace/workspace.module";
 import { ZohoModule } from "./zoho/zoho.module";
 
@@ -72,6 +73,7 @@ import { ZohoModule } from "./zoho/zoho.module";
 		SyncModule,
 		SettingsModule,
 		WorkspaceModule,
+		WorkManagementModule,
 		SsoModule,
 		BackfillModule,
 		TelemetryModule,

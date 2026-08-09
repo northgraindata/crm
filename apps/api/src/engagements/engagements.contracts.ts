@@ -86,6 +86,7 @@ export const teamMemberListInput = z.object({
 
 export const teamMemberCreateInput = z.object({
 	name: z.string().trim().min(1),
+	email: z.string().trim().email().nullable().optional(),
 	role: z.string().trim().nullable().optional(),
 	status: teamMemberStatus.default(TeamMemberStatus.ACTIVE),
 	employmentType: employmentType.default(EmploymentType.EMPLOYEE),

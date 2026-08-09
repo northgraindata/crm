@@ -107,6 +107,7 @@ is set.
 | `GITHUB_TOKEN` | Raises the GitHub rate limit from 60/hour |
 | `STORAGE_*` | Mirrors logos and photos into the self-hosted S3-compatible storage |
 | `AGENT_BRIDGE_SECRET` | The rep-facing Agent panel — see `agent.md` |
+| `RESEND_API_KEY` + `RESEND_FROM_EMAIL` | Optional employee document reminder emails |
 
 `STORAGE_*` is also in `env.validation.ts` and the relevant Turbo pass-through lists
 because the API, agent and seed write pictures. The web app proxies `/media/*` to

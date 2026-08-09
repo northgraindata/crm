@@ -44,7 +44,7 @@ model User {
 
   members     Member[]
   invitations Invitation[]
-	teamMember  TeamMember?
+  teamMember  TeamMember?
 
   ssoproviders SsoProvider[]
 
@@ -131,61 +131,100 @@ model ApiToken {
 }
 
 enum DealStage {
-	DISCOVERY
-	QUALIFIED
-	SCOPING
-	PROPOSAL
-	NEGOTIATION
-	CLOSED_WON
-	CLOSED_LOST
+  DISCOVERY
+  QUALIFIED
+  SCOPING
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
 }
 
 enum EngagementType {
-	SPRINT
-	AUDIT
-	EMBEDDED
-	SUBCONTRACTING
+  SPRINT
+  AUDIT
+  EMBEDDED
+  SUBCONTRACTING
 }
 
 enum EngagementStatus {
-	PLANNED
-	ACTIVE
-	PAUSED
-	COMPLETED
-	CANCELLED
+  PLANNED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
 }
 
 enum BillingModel {
-	FIXED
-	HOURLY
-	DAILY
-	MONTHLY
+  FIXED
+  HOURLY
+  DAILY
+  MONTHLY
 }
 
 enum TestimonialStatus {
-	NOT_REQUESTED
-	PLANNED
-	REQUESTED
-	RECEIVED
-	DECLINED
+  NOT_REQUESTED
+  PLANNED
+  REQUESTED
+  RECEIVED
+  DECLINED
 }
 
 enum CaseStudyStatus {
-	UNAVAILABLE
-	CANDIDATE
-	APPROVED
-	PUBLISHED
+  UNAVAILABLE
+  CANDIDATE
+  APPROVED
+  PUBLISHED
 }
 
 enum TeamMemberStatus {
-	ACTIVE
-	INACTIVE
+  ACTIVE
+  INACTIVE
 }
 
 enum EmploymentType {
-	EMPLOYEE
-	CONTRACTOR
-	AGENCY
+  EMPLOYEE
+  CONTRACTOR
+  AGENCY
+}
+
+enum WorkTaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  REVIEW
+  DONE
+}
+
+enum WorkTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TimeEntrySource {
+  TIMER
+  MANUAL
+}
+
+enum TeamMemberDocumentStatus {
+  ACTIVE
+  EXPIRED
+  ARCHIVED
+}
+
+enum ReminderChannel {
+  CRM
+  EMAIL
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  COMPLETED
+  DISMISSED
 }
 
 enum ActivityType {
@@ -348,17 +387,17 @@ model Company {
 
   lastActivityAt DateTime?
 
-  contacts       Contact[]           @relation("CompanyContacts")
-  conversations  AgentConversation[]
-  deals          Deal[]
-  engagements    Engagement[]
+  contacts        Contact[]           @relation("CompanyContacts")
+  conversations   AgentConversation[]
+  deals           Deal[]
+  engagements     Engagement[]
   surveyResponses SurveyResponse[]
-  activities     Activity[]
-  emailThreads   EmailThread[]
-  calendarEvents CalendarEvent[]
-  fieldValues    FieldValue[]
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  activities      Activity[]
+  emailThreads    EmailThread[]
+  calendarEvents  CalendarEvent[]
+  fieldValues     FieldValue[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
   @@index([ownerId])
   @@index([name])
@@ -485,9 +524,9 @@ model ContactBrief {
 }
 
 model AgentTask {
-  id        String  @id @default(cuid())
-  contactId String?
-  companyId String?
+  id               String  @id @default(cuid())
+  contactId        String?
+  companyId        String?
   surveyResponseId String?
 
   kind   String
@@ -532,34 +571,34 @@ model Survey {
 }
 
 model SurveyResponse {
-  id              String                @id @default(cuid())
-  surveyId        String
-  survey          Survey                @relation(fields: [surveyId], references: [id], onDelete: Cascade)
-  sessionId       String
-  version         Int
-  status          SurveyResponseStatus  @default(STARTED)
-  analysisStatus  SurveyAnalysisStatus  @default(PENDING)
+  id             String               @id @default(cuid())
+  surveyId       String
+  survey         Survey               @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  sessionId      String
+  version        Int
+  status         SurveyResponseStatus @default(STARTED)
+  analysisStatus SurveyAnalysisStatus @default(PENDING)
 
   contactId       String?
-  contact         Contact?              @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contact         Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
   companyId       String?
-  company         Company?              @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  company         Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   respondentName  String
   respondentEmail String
 
-  currentIndex    Int                   @default(0)
-  questionCount   Int
-  answers         Json
-  priority        Json?
-  incentive       Json?
-  sourceUrl       String?
-  userAgent       String?
-  analysis        Json?
-  analysisError   String?
-  startedAt       DateTime              @default(now())
-  lastSavedAt     DateTime              @updatedAt
-  completedAt     DateTime?
-  abandonedAt     DateTime?
+  currentIndex  Int       @default(0)
+  questionCount Int
+  answers       Json
+  priority      Json?
+  incentive     Json?
+  sourceUrl     String?
+  userAgent     String?
+  analysis      Json?
+  analysisError String?
+  startedAt     DateTime  @default(now())
+  lastSavedAt   DateTime  @updatedAt
+  completedAt   DateTime?
+  abandonedAt   DateTime?
 
   events SurveyResponseEvent[]
 
@@ -573,15 +612,15 @@ model SurveyResponse {
 }
 
 model SurveyResponseEvent {
-  id           String         @id @default(cuid())
+  id           String               @id @default(cuid())
   responseId   String
-  response     SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  response     SurveyResponse       @relation(fields: [responseId], references: [id], onDelete: Cascade)
   eventId      String
   status       SurveyResponseStatus
   currentIndex Int
   answers      Json
   priority     Json?
-  receivedAt   DateTime       @default(now())
+  receivedAt   DateTime             @default(now())
 
   @@unique([responseId, eventId])
   @@index([responseId, receivedAt])
@@ -1210,6 +1249,7 @@ model Activity {
 model TeamMember {
   id             String           @id @default(cuid())
   name           String
+  email          String?
   role           String?
   status         TeamMemberStatus @default(ACTIVE)
   employmentType EmploymentType   @default(EMPLOYEE)
@@ -1222,6 +1262,9 @@ model TeamMember {
 
   ledEngagements Engagement[]           @relation("EngagementLead")
   assignments    EngagementAssignment[]
+  tasks          WorkTask[]
+  timeEntries    TimeEntry[]
+  documents      TeamMemberDocument[]
   createdAt      DateTime               @default(now())
   updatedAt      DateTime               @updatedAt
 
@@ -1255,8 +1298,10 @@ model Engagement {
   notes             String?
 
   assignments EngagementAssignment[]
-  createdAt  DateTime                @default(now())
-  updatedAt  DateTime                @updatedAt
+  tasks       WorkTask[]
+  timeEntries TimeEntry[]
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
 
   @@index([companyId])
   @@index([sourceDealId])
@@ -1280,6 +1325,93 @@ model EngagementAssignment {
   @@id([engagementId, teamMemberId])
   @@index([teamMemberId])
   @@map("engagementAssignment")
+}
+
+model WorkTask {
+  id               String           @id @default(cuid())
+  engagementId     String
+  engagement       Engagement       @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  assigneeId       String?
+  assignee         TeamMember?      @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  title            String
+  description      String?
+  status           WorkTaskStatus   @default(TODO)
+  priority         WorkTaskPriority @default(MEDIUM)
+  sortOrder        Int              @default(0)
+  dueAt            DateTime?
+  estimatedMinutes Int?
+  completedAt      DateTime?
+  timeEntries      TimeEntry[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([engagementId, status, sortOrder])
+  @@index([assigneeId, status])
+  @@index([dueAt])
+  @@map("workTask")
+}
+
+model TimeEntry {
+  id                 String          @id @default(cuid())
+  teamMemberId       String
+  teamMember         TeamMember      @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+  engagementId       String
+  engagement         Engagement      @relation(fields: [engagementId], references: [id], onDelete: Cascade)
+  workTaskId         String?
+  workTask           WorkTask?       @relation(fields: [workTaskId], references: [id], onDelete: SetNull)
+  workDate           DateTime
+  durationMinutes    Int?
+  startedAt          DateTime?
+  endedAt            DateTime?
+  source             TimeEntrySource @default(MANUAL)
+  billable           Boolean         @default(true)
+  hourlyCostSnapshot Decimal?        @db.Decimal(14, 2)
+  note               String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([teamMemberId, workDate])
+  @@index([engagementId, workDate])
+  @@index([workTaskId])
+  @@index([startedAt, endedAt])
+  @@map("timeEntry")
+}
+
+model TeamMemberDocument {
+  id           String                   @id @default(cuid())
+  teamMemberId String
+  teamMember   TeamMember               @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+  kind         String
+  label        String
+  status       TeamMemberDocumentStatus @default(ACTIVE)
+  validFrom    DateTime?
+  expiresAt    DateTime?
+  reminderDays Int                      @default(30)
+  notes        String?
+  reminders    TeamMemberReminder[]
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  @@index([teamMemberId, status])
+  @@index([expiresAt])
+  @@map("teamMemberDocument")
+}
+
+model TeamMemberReminder {
+  id          String             @id @default(cuid())
+  documentId  String
+  document    TeamMemberDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  channel     ReminderChannel
+  status      ReminderStatus     @default(PENDING)
+  dueAt       DateTime
+  sentAt      DateTime?
+  completedAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([documentId, channel, dueAt])
+  @@index([status, dueAt])
+  @@map("teamMemberReminder")
 }
 
 enum GoogleSyncStatus {

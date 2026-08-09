@@ -29,6 +29,7 @@ import { microsoftConnectionInput, setOutlookAutoCreateInput } from "../microsof
 import { setAgentModelInput, setResearchKeyInput } from "../settings/settings.contracts";
 import { ssoProviderListInput, registerSsoProviderInput, deleteSsoProviderInput } from "../sso/sso.contracts";
 import { surveyListInput, surveyResponseListInput, surveyResponseIdInput } from "../surveys/surveys.contracts";
+import { workTaskListInput, workTaskCreateInput, workTaskUpdateInput, workTaskMoveInput, timeEntryListInput, timeEntryCreateInput, timerInput, timeEntryIdInput, payrollSummaryInput, teamMemberDocumentCreateInput, teamMemberDocumentUpdateInput, reminderListInput, reminderIdInput } from "../work-management/work-management.contracts";
 import { memberListInput, updateWorkspaceInput, setMemberRoleInput } from "../workspace/workspace.contracts";
 import { zohoConnectionInput, setZohoAutoCreateInput } from "../zoho/zoho.contracts";
 import type { ActivitiesRouter } from "../activities/activities.router";
@@ -49,6 +50,7 @@ import type { SettingsRouter } from "../settings/settings.router";
 import type { SsoRouter } from "../sso/sso.router";
 import type { SurveysRouter } from "../surveys/surveys.router";
 import type { UsersRouter } from "../users/users.router";
+import type { WorkManagementRouter } from "../work-management/work-management.router";
 import type { WorkspaceRouter } from "../workspace/workspace.router";
 import type { ZohoRouter } from "../zoho/zoho.router";
 
@@ -447,6 +449,47 @@ const appRouter = t.router({
       .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<UsersRouter["me"]>>),
     list: publicProcedure
       .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<UsersRouter["list"]>>)
+    }),
+  workManagement: t.router({
+    tasks: publicProcedure
+      .input(workTaskListInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["tasks"]>>),
+    createTask: publicProcedure
+      .input(workTaskCreateInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["createTask"]>>),
+    updateTask: publicProcedure
+      .input(workTaskUpdateInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["updateTask"]>>),
+    moveTask: publicProcedure
+      .input(workTaskMoveInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["moveTask"]>>),
+    timeEntries: publicProcedure
+      .input(timeEntryListInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["timeEntries"]>>),
+    createTimeEntry: publicProcedure
+      .input(timeEntryCreateInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["createTimeEntry"]>>),
+    startTimer: publicProcedure
+      .input(timerInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["startTimer"]>>),
+    stopTimer: publicProcedure
+      .input(timeEntryIdInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["stopTimer"]>>),
+    payroll: publicProcedure
+      .input(payrollSummaryInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["payroll"]>>),
+    createDocument: publicProcedure
+      .input(teamMemberDocumentCreateInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["createDocument"]>>),
+    updateDocument: publicProcedure
+      .input(teamMemberDocumentUpdateInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["updateDocument"]>>),
+    reminders: publicProcedure
+      .input(reminderListInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["reminders"]>>),
+    completeReminder: publicProcedure
+      .input(reminderIdInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["completeReminder"]>>)
     }),
   workspace: t.router({
     get: publicProcedure

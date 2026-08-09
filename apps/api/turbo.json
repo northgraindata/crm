@@ -44,7 +44,9 @@
 				"ZOHO_MAIL_URL",
 				"MICROSOFT_TENANT_ID",
 				"PORT",
-				"REDIS_URL"
+				"REDIS_URL",
+				"RESEND_API_KEY",
+				"RESEND_FROM_EMAIL"
 			]
 		},
 		"test": {
@@ -74,7 +76,9 @@
 				"ZOHO_MAIL_URL",
 				"MICROSOFT_TENANT_ID",
 				"PORT",
-				"REDIS_URL"
+				"REDIS_URL",
+				"RESEND_API_KEY",
+				"RESEND_FROM_EMAIL"
 			]
 		}
 	}

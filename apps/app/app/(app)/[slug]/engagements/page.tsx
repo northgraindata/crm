@@ -6,6 +6,7 @@ import {
 	CardTitle,
 } from "@crm/ui/components/card";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import {
 	PageShell,
@@ -20,8 +21,12 @@ import { requireSession } from "@/lib/session";
 import { getServerQueryClient, getServerTrpc } from "@/lib/trpc/server";
 
 export const metadata: Metadata = { title: "Delivery" };
+export const instant = false;
 
-export default function EngagementsPage() {
+export default async function EngagementsPage({
+	params,
+}: PageProps<"/[slug]/engagements">) {
+	const { slug } = await params;
 	return (
 		<PageShell className="min-h-0">
 			<PageShellHeader>
@@ -34,14 +39,14 @@ export default function EngagementsPage() {
 			</PageShellHeader>
 			<PageShellContent className="min-h-0 overflow-auto">
 				<Suspense fallback={<PageShellLoading />}>
-					<Engagements />
+					<Engagements slug={slug} />
 				</Suspense>
 			</PageShellContent>
 		</PageShell>
 	);
 }
 
-async function Engagements() {
+async function Engagements({ slug }: { slug: string }) {
 	await requireSession();
 	const rows = await getServerQueryClient().fetchQuery(
 		getServerTrpc().engagements.list.queryOptions({ limit: 100 }),
@@ -60,41 +65,46 @@ async function Engagements() {
 		<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 			{rows.map((engagement) => (
 				<Card key={engagement.id}>
-					<CardHeader>
-						<CardTitle>{engagement.name}</CardTitle>
-						<CardDescription>
-							{engagement.company.name} · {engagement.status.toLowerCase()}
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="grid gap-2 text-sm">
-						<div className="flex justify-between">
-							<span>Type</span>
-							<span>{engagement.type.toLowerCase()}</span>
-						</div>
-						<div className="flex justify-between">
-							<span>Contract</span>
-							<span>
-								{engagement.contractValue === null
-									? "—"
-									: `${engagement.contractValue} ${engagement.currency}`}
-							</span>
-						</div>
-						<div className="flex justify-between">
-							<span>Hours</span>
-							<span>
-								{engagement.actualHours ?? "—"} /{" "}
-								{engagement.estimatedHours ?? "—"}
-							</span>
-						</div>
-						<div className="flex justify-between">
-							<span>Margin</span>
-							<span>
-								{engagement.grossMargin === null
-									? "Pending actuals"
-									: `${engagement.grossMargin} ${engagement.currency}`}
-							</span>
-						</div>
-					</CardContent>
+					<Link
+						href={`/${slug}/engagements/${engagement.id}`}
+						className="block"
+					>
+						<CardHeader>
+							<CardTitle>{engagement.name}</CardTitle>
+							<CardDescription>
+								{engagement.company.name} · {engagement.status.toLowerCase()}
+							</CardDescription>
+						</CardHeader>
+						<CardContent className="grid gap-2 text-sm">
+							<div className="flex justify-between">
+								<span>Type</span>
+								<span>{engagement.type.toLowerCase()}</span>
+							</div>
+							<div className="flex justify-between">
+								<span>Contract</span>
+								<span>
+									{engagement.contractValue === null
+										? "—"
+										: `${engagement.contractValue} ${engagement.currency}`}
+								</span>
+							</div>
+							<div className="flex justify-between">
+								<span>Hours</span>
+								<span>
+									{engagement.actualHours ?? "—"} /{" "}
+									{engagement.estimatedHours ?? "—"}
+								</span>
+							</div>
+							<div className="flex justify-between">
+								<span>Margin</span>
+								<span>
+									{engagement.grossMargin === null
+										? "Pending actuals"
+										: `${engagement.grossMargin} ${engagement.currency}`}
+								</span>
+							</div>
+						</CardContent>
+					</Link>
 				</Card>
 			))}
 		</div>

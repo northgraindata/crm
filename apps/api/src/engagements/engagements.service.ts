@@ -237,6 +237,7 @@ function teamMemberData(
 function serializeTeamMember(row: {
 	id: string;
 	name: string;
+	email: string | null;
 	role: string | null;
 	status: string;
 	employmentType: string;

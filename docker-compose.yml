@@ -40,6 +40,8 @@ x-crm-environment: &crm-environment
   GITHUB_TOKEN: ${GITHUB_TOKEN:-}
   IS_MARKETING: ${IS_MARKETING:-false}
   CRM_TELEMETRY_DISABLED: ${CRM_TELEMETRY_DISABLED:-1}
+  RESEND_API_KEY: ${RESEND_API_KEY:-}
+  RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
 
 services:
   postgres:
@@ -189,6 +191,7 @@ services:
         ticks=288
         while true; do
           curl -fsS -X POST -H "Authorization: Bearer $$CRON_SECRET" http://api:3001/internal/sync/mailboxes || true
+          curl -fsS -X POST -H "Authorization: Bearer $$CRON_SECRET" http://api:3001/internal/reminders/team-members || true
           if [ "$$ticks" -ge 288 ]; then
             curl -fsS -X POST -H "Authorization: Bearer $$CRON_SECRET" http://api:3001/internal/sync/rates || true
             ticks=0
