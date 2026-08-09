@@ -25,7 +25,8 @@ ENV NODE_ENV=production \
     NEXT_PUBLIC_API_URL=${PUBLIC_API_URL} \
     APP_URL=http://127.0.0.1:3000 \
     AGENT_URL=${AGENT_URL} \
-    OPENROUTER_API_KEY=build-only
+    OPENROUTER_API_KEY=build-only \
+    CRM_BUILD=1
 
 RUN bun install --frozen-lockfile
 RUN bun run db:generate
@@ -48,7 +49,8 @@ RUN apt-get update \
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    CRM_BUILD=0
 
 COPY --from=build --chown=node:node /app /app
 

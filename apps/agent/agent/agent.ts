@@ -6,11 +6,15 @@ import { type AgentDefinition, defineAgent, defineDynamic } from "eve";
 import { logCapabilities } from "./lib/capabilities";
 import { openRouterModel, selectedModel } from "./lib/model";
 
-void logCapabilities();
+if (process.env.CRM_BUILD !== "1") {
+	void logCapabilities();
+}
 
 onTelemetryProblem((message) => console.debug(`[telemetry] ${message}`));
 
-void syncVersion();
+if (process.env.CRM_BUILD !== "1") {
+	void syncVersion();
+}
 
 const agent: AgentDefinition = defineAgent({
 	model: defineDynamic({
