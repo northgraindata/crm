@@ -13,6 +13,7 @@ RUN apt-get update \
 COPY . .
 
 ARG API_URL=http://api:3001
+ARG PUBLIC_API_URL=http://localhost:3001
 ARG AGENT_URL=http://agent:2000
 ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 
@@ -21,6 +22,7 @@ ENV NODE_ENV=production \
     BETTER_AUTH_SECRET=build-only-secret-with-at-least-32-characters \
     ALLOWED_SIGN_IN=build.invalid \
     API_URL=${API_URL} \
+    PUBLIC_API_URL=${PUBLIC_API_URL} \
     NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
     NEXT_PUBLIC_API_URL=${API_URL} \
     APP_URL=http://127.0.0.1:3000 \

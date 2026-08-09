@@ -57,7 +57,9 @@ list fails closed.** Parsed on demand. `packages/auth/src/workspace.ts`.
 
 ## Where things are
 
-- **`API_URL`** (`:3001`) mints session cookies and serves `/api/auth/*`;
+- **`PUBLIC_API_URL`** is the public HTTPS origin used in OAuth callback URLs. Set it
+  to the externally reachable CRM domain in Coolify. **`API_URL`** (`:3001`) is the
+  internal/server origin used for proxying and mints session cookies and serves `/api/auth/*`;
   `next.config.ts` republishes it as `NEXT_PUBLIC_API_URL`, so one variable does both
   sides. `BETTER_AUTH_URL` is a legacy fallback.
 - **`APP_URL`** (`:3000`) is also the trusted-origin and `callbackURL` allow-list.

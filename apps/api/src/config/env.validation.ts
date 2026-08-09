@@ -89,6 +89,10 @@ export class EnvironmentVariables {
 	API_URL?: string;
 
 	@IsOptional()
+	@IsUrl({ require_tld: false })
+	PUBLIC_API_URL?: string;
+
+	@IsOptional()
 	@IsString()
 	APP_URL?: string;
 

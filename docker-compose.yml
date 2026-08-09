@@ -5,6 +5,7 @@ x-crm-image: &crm-image
     dockerfile: Dockerfile
     args:
       API_URL: http://api:3001
+      PUBLIC_API_URL: ${SERVICE_URL_WEB}
       AGENT_URL: http://agent:2000
       NEXT_PUBLIC_API_URL: ${SERVICE_URL_WEB}
 
@@ -117,6 +118,7 @@ services:
     environment:
       <<: *crm-environment
       API_URL: ${SERVICE_URL_WEB}
+      PUBLIC_API_URL: ${SERVICE_URL_WEB}
       PORT: "3001"
     command: ["bun", "run", "--cwd", "apps/api", "start:prod"]
     depends_on:
@@ -158,6 +160,7 @@ services:
     environment:
       <<: *crm-environment
       API_URL: http://api:3001
+      PUBLIC_API_URL: ${SERVICE_URL_WEB}
       NEXT_PUBLIC_API_URL: ${SERVICE_URL_WEB}
       PORT: "3000"
       HOSTNAME: 0.0.0.0
