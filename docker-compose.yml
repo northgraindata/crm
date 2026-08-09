@@ -7,7 +7,7 @@ x-crm-image: &crm-image
       API_URL: http://api:3001
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
       AGENT_URL: http://agent:2000
-      NEXT_PUBLIC_API_URL: ${SERVICE_URL_WEB}
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
 
 x-crm-environment: &crm-environment
   NODE_ENV: production
@@ -161,7 +161,7 @@ services:
       <<: *crm-environment
       API_URL: http://api:3001
       PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
-      NEXT_PUBLIC_API_URL: ${SERVICE_URL_WEB}
+      NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3001}
       PORT: "3000"
       HOSTNAME: 0.0.0.0
     command: ["bun", "run", "--cwd", "apps/app", "start"]
