@@ -64,6 +64,7 @@ const zohoCredentials = ():
 
 const apiUrl =
 	optional("PUBLIC_API_URL") ??
+	optional("APP_URL")?.split(",")[0]?.trim() ??
 	optional("BETTER_AUTH_URL") ??
 	optional("API_URL") ??
 	DEFAULT_API_URL;
