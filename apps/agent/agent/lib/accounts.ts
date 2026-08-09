@@ -522,11 +522,7 @@ export async function readDealHistory(
 }
 
 function isOpen(stage: string): boolean {
-	return (
-		stage !== "CLOSED_WON" &&
-		stage !== "CLOSED_LOST" &&
-		stage !== "UNQUALIFIED_TO_BUY"
-	);
+	return stage !== "CLOSED_WON" && stage !== "CLOSED_LOST";
 }
 
 async function recentNotes(

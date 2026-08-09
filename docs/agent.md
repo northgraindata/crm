@@ -59,7 +59,7 @@ behind sixty LLM runs for 25 minutes (`test/lanes.integration.spec.ts`). **The r
 what the work is; the lane only says whether it needs a conversation.**
 
 **Priority**: `brand` 900 · `portrait` 800 · `workspace` 500 · `requested` 300 ·
-`meeting` 200 · `identify` 100 · `sweep` 50 · `companyProfile` 40 · `recheck` 0. The
+`meeting` 200 · `relationshipTriage` 120 · `identify` 100 · `sweep` 50 · `companyProfile` 40 · `recheck` 0. The
 top two are what a rep reads *before* deciding what to open.
 
 **`claimDue` sorts what it claims** — Postgres does not order `UPDATE … RETURNING` by

@@ -20,6 +20,8 @@
 			"persistent": true,
 			"passThroughEnv": [
 				"AUTH_COOKIE_DOMAIN",
+				"APP_URL",
+				"EXTENSION_ORIGINS",
 				"AUTH_TRUSTED_ORIGINS",
 				"STORAGE_ENDPOINT",
 				"STORAGE_REGION",
@@ -47,6 +49,8 @@
 		"test": {
 			"passThroughEnv": [
 				"AUTH_COOKIE_DOMAIN",
+				"APP_URL",
+				"EXTENSION_ORIGINS",
 				"AUTH_TRUSTED_ORIGINS",
 				"STORAGE_ENDPOINT",
 				"STORAGE_REGION",

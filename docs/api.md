@@ -144,6 +144,8 @@ personal access token in Settings → API access, then send it as
 - `GET|POST|PATCH|DELETE /api/v1/companies` and `/api/v1/companies/:id` manage companies.
 - `GET|POST|PATCH|DELETE /api/v1/contacts` and `/api/v1/contacts/:id` manage contacts.
 - `GET|POST|PATCH|DELETE /api/v1/deals` and `/api/v1/deals/:id` manage deals.
+- `GET|POST /api/v1/activities` and `PATCH /api/v1/activities/:id` manage timeline tasks and activities.
+- `POST /api/v1/linkedin/captures` upserts a manually confirmed LinkedIn relationship, creates a Company when needed, and queues agent triage.
 - `crm:read` permits reads; `crm:write` permits reads and writes.
 
 Only a hash of each token is stored. The plaintext token is shown once when it

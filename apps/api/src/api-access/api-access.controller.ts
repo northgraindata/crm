@@ -17,6 +17,12 @@ import { AllowAnonymous } from "@thallesp/nestjs-better-auth";
 import type { Request } from "express";
 import type { ZodType } from "zod";
 import {
+	activityCreateInput,
+	completeInput,
+	timelineInput,
+} from "../activities/activities.contracts";
+import { ActivitiesService } from "../activities/activities.service";
+import {
 	companyCreateInput,
 	companyListInput,
 	companyUpdateArgs,
@@ -36,6 +42,8 @@ import {
 } from "../deals/deals.contracts";
 import { DealsService } from "../deals/deals.service";
 import { ApiAccessGuard, type ApiRequest } from "./api-access.guard";
+import { linkedinCaptureInput } from "./linkedin-capture.contracts";
+import { LinkedInCaptureService } from "./linkedin-capture.service";
 
 @Controller("api/v1")
 @AllowAnonymous()
@@ -46,6 +54,8 @@ export class ApiAccessController {
 		private readonly companies: CompaniesService,
 		private readonly contacts: ContactsService,
 		private readonly deals: DealsService,
+		private readonly linkedin: LinkedInCaptureService,
+		private readonly activities: ActivitiesService,
 	) {}
 
 	@Get("me")
@@ -57,6 +67,54 @@ export class ApiAccessController {
 			select: { id: true, name: true, email: true },
 		});
 		return { user, token: { id: principal.tokenId, scopes: principal.scopes } };
+	}
+
+	@Post("linkedin/captures")
+	async linkedinCapture(@Req() request: ApiRequest, @Body() body: unknown) {
+		requireWrite(request);
+		if (!request.apiToken) throw new ForbiddenException();
+		return this.linkedin.capture(
+			parseInput(linkedinCaptureInput, body),
+			request.apiToken.userId,
+		);
+	}
+
+	@Get("activities")
+	async activitiesList(
+		@Req() request: ApiRequest,
+		@Query() query: Record<string, string>,
+	) {
+		requireRead(request);
+		return this.activities.timeline(
+			parseInput(timelineInput, {
+				...query,
+				limit: number(query.limit, 50),
+			}),
+		);
+	}
+
+	@Post("activities")
+	async createActivity(@Req() request: ApiRequest, @Body() body: unknown) {
+		requireWrite(request);
+		if (!request.apiToken) throw new ForbiddenException();
+		return this.activities.create(
+			parseInput(activityCreateInput, body),
+			request.apiToken.userId,
+		);
+	}
+
+	@Patch("activities/:id")
+	async completeActivity(
+		@Req() request: ApiRequest,
+		@Param("id") id: string,
+		@Body() body: unknown,
+	) {
+		requireWrite(request);
+		const input = parseInput(completeInput, {
+			...(body as Record<string, unknown>),
+			id,
+		});
+		return this.activities.complete(input.id, input.completed);
 	}
 
 	@Get("companies")

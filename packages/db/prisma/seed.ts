@@ -247,17 +247,14 @@ const TITLES = [
 ] as const;
 
 const OPEN_STAGES = [
-	DealStage.DEMO_BOOKED,
-	DealStage.QUALIFIED_TO_BUY,
-	DealStage.DECISION_MAKER_BOUGHT_IN,
-	DealStage.CONTRACT_SENT,
+	DealStage.DISCOVERY,
+	DealStage.QUALIFIED,
+	DealStage.SCOPING,
+	DealStage.PROPOSAL,
+	DealStage.NEGOTIATION,
 ] as const;
 
-const CLOSED_STAGES = [
-	DealStage.CLOSED_WON,
-	DealStage.CLOSED_LOST,
-	DealStage.UNQUALIFIED_TO_BUY,
-] as const;
+const CLOSED_STAGES = [DealStage.CLOSED_WON, DealStage.CLOSED_LOST] as const;
 
 const DEAL_DESCRIPTIONS = [
 	"Replacing a spreadsheet-and-Drive evidence process before their first SOC 2 audit. Security owns the decision, finance signs.",
@@ -612,10 +609,7 @@ async function seedDeals(
 					),
 					closedAt: closed ? stageChangedAt : null,
 					closedReason:
-						stage === DealStage.CLOSED_LOST ||
-						stage === DealStage.UNQUALIFIED_TO_BUY
-							? pick(LOST_REASONS)
-							: null,
+						stage === DealStage.CLOSED_LOST ? pick(LOST_REASONS) : null,
 					createdAt,
 				},
 				update: {},
@@ -721,8 +715,8 @@ async function seedActivities(
 			dealId: deal.id,
 			subject: "Stage changed",
 			meta: {
-				from: DealStage.DEMO_BOOKED,
-				to: deal.closed ? DealStage.CLOSED_WON : DealStage.QUALIFIED_TO_BUY,
+				from: DealStage.DISCOVERY,
+				to: deal.closed ? DealStage.CLOSED_WON : DealStage.QUALIFIED,
 			},
 		});
 	}

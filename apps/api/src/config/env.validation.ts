@@ -94,6 +94,10 @@ export class EnvironmentVariables {
 
 	@IsOptional()
 	@IsString()
+	EXTENSION_ORIGINS?: string;
+
+	@IsOptional()
+	@IsString()
 	AUTH_COOKIE_DOMAIN?: string;
 
 	@IsOptional()

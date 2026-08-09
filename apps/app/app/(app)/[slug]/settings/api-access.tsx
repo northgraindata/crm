@@ -121,7 +121,8 @@ export function ApiAccess() {
 								<label htmlFor="api-scope-read">
 									<span className="block">Read CRM data</span>
 									<span className="block text-muted-foreground text-xs">
-										List and view companies, contacts, and deals.
+										List and view CRM records, activities, and LinkedIn
+										follow-ups.
 									</span>
 								</label>
 							</div>
@@ -134,7 +135,8 @@ export function ApiAccess() {
 								<label htmlFor="api-scope-write">
 									<span className="block">Write CRM data</span>
 									<span className="block text-muted-foreground text-xs">
-										Create, update, and delete companies, contacts, and deals.
+										Create and update CRM records, activities, and LinkedIn
+										captures.
 									</span>
 								</label>
 							</div>

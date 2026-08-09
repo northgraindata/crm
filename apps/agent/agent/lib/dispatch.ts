@@ -149,6 +149,8 @@ function work(kind: string, reason: string): string {
 	switch (kind) {
 		case "identify":
 			return "Work out who this contact actually is, and record what you find. Read what we already have before spending anything.";
+		case "relationship-triage":
+			return "Research this newly captured relationship, classify its role and relevance, update supported contact fields with evidence, and create one useful manual follow-up task with a suggested message when outreach is appropriate.";
 		case "profile":
 		case "recheck":
 			return "Bring this contact's record up to date: their background, their current role, and anything that has changed since we last looked.";

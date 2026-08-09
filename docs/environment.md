@@ -61,6 +61,8 @@ list fails closed.** Parsed on demand. `packages/auth/src/workspace.ts`.
   `next.config.ts` republishes it as `NEXT_PUBLIC_API_URL`, so one variable does both
   sides. `BETTER_AUTH_URL` is a legacy fallback.
 - **`APP_URL`** (`:3000`) is also the trusted-origin and `callbackURL` allow-list.
+- **`EXTENSION_ORIGINS`** is an optional comma-separated CORS allow-list for the
+  Chrome/Safari LinkedIn extension.
 - **`AUTH_COOKIE_DOMAIN`** only for API and app on different subdomains of one parent.
 - **`AGENT_URL`** is the agent's deployment, server-side only, and **must include the
   scheme** — validated at boot, or it throws when a task is queued instead.

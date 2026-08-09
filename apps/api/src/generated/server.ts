@@ -22,6 +22,7 @@ import { conversationListInput, builderResourceSearchInput, conversationIdInput,
 import { setReportingCurrencyInput, setManualRateInput, removeManualRateInput } from "../currency/currency.contracts";
 import { dashboardSummaryInput } from "../dashboard/dashboard.contracts";
 import { dealListInput, dealIdInput, dealCreateInput, dealUpdateArgs, setStageInput, dealContactsInput, dealAttachContactInput, dealDetachContactInput, dealContactRoleInput, dealBulkOwnerInput, dealBulkStageInput, dealBulkInput } from "../deals/deals.contracts";
+import { engagementListInput, engagementIdInput, engagementCreateInput, engagementUpdateArgs, teamMemberListInput, teamMemberCreateInput, teamMemberUpdateArgs } from "../engagements/engagements.contracts";
 import { fieldListInput, fieldByKeyInput, fieldIdInput, fieldCreateInput, fieldUpdateArgs, fieldReorderInput } from "../fields/fields.contracts";
 import { googleConnectionInput, setAutoCreateInput, suppressDomainInput, threadInput, calendarEventInput } from "../google/google.contracts";
 import { microsoftConnectionInput, setOutlookAutoCreateInput } from "../microsoft/microsoft.contracts";
@@ -38,6 +39,7 @@ import type { ConversationsRouter } from "../conversations/conversations.router"
 import type { CurrencyRouter } from "../currency/currency.router";
 import type { DashboardRouter } from "../dashboard/dashboard.router";
 import type { DealsRouter } from "../deals/deals.router";
+import type { EngagementsRouter } from "../engagements/engagements.router";
 import type { FieldsRouter } from "../fields/fields.router";
 import type { GoogleRouter } from "../google/google.router";
 import type { MicrosoftRouter } from "../microsoft/microsoft.router";
@@ -295,6 +297,32 @@ const appRouter = t.router({
     bulkDelete: publicProcedure
       .input(dealBulkInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<DealsRouter["bulkDelete"]>>)
+    }),
+  engagements: t.router({
+    list: publicProcedure
+      .input(engagementListInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["list"]>>),
+    byId: publicProcedure
+      .input(engagementIdInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["byId"]>>),
+    create: publicProcedure
+      .input(engagementCreateInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["create"]>>),
+    update: publicProcedure
+      .input(engagementUpdateArgs)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["update"]>>),
+    delete: publicProcedure
+      .input(engagementIdInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["delete"]>>),
+    teamMembers: publicProcedure
+      .input(teamMemberListInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["teamMembers"]>>),
+    createTeamMember: publicProcedure
+      .input(teamMemberCreateInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["createTeamMember"]>>),
+    updateTeamMember: publicProcedure
+      .input(teamMemberUpdateArgs)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["updateTeamMember"]>>)
     }),
   fields: t.router({
     list: publicProcedure

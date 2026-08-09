@@ -15,6 +15,11 @@ export async function createApp(): Promise<NestExpressApplication> {
 		new ExpressAdapter(),
 		{ bodyParser: false, logger: new ContextLogger() },
 	);
+	const origins = [process.env.APP_URL, process.env.EXTENSION_ORIGINS]
+		.flatMap((value) => (value ?? "").split(","))
+		.map((value) => value.trim())
+		.filter(Boolean);
+	app.enableCors({ origin: origins.length > 0 ? origins : false });
 
 	app.use(helmet());
 	app.use("/api/v1", express.json({ limit: "1mb" }));
