@@ -39,10 +39,14 @@ export function capabilitiesFrom(
 		from: id,
 		enabled: Boolean(process.env[id]?.trim()),
 	});
+	const directLinkdapi = Boolean(process.env.LINKDAPI_API_KEY?.trim());
+	const rapidLinkdapi = Boolean(process.env.RAPIDAPI_KEY?.trim());
 
 	return [
 		{
-			...fromEnv("RAPIDAPI_KEY"),
+			id: "RAPIDAPI_KEY",
+			from: directLinkdapi ? "LINKDAPI_API_KEY" : "RAPIDAPI_KEY",
+			enabled: directLinkdapi || rapidLinkdapi,
 			label: "LinkedIn",
 			gives:
 				"a person's real name, current title, employer and tenure, self-reported, and so authoritative on identity",
@@ -70,6 +74,11 @@ export function capabilitiesFrom(
 }
 
 export async function enabled(id: string): Promise<boolean> {
+	if (id === "RAPIDAPI_KEY") {
+		return Boolean(
+			process.env.RAPIDAPI_KEY?.trim() || process.env.LINKDAPI_API_KEY?.trim(),
+		);
+	}
 	return (await capabilities()).some(
 		(capability) => capability.id === id && capability.enabled,
 	);

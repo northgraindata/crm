@@ -99,7 +99,7 @@ is set.
 | Variable | What it adds |
 | --- | --- |
 | `OPENROUTER_API_KEY` | The agent model plus Perplexity Sonar web research with citations |
-| `RAPIDAPI_KEY` | LinkedIn profiles via LinkDAPI |
+| `LINKDAPI_API_KEY` or `RAPIDAPI_KEY` | LinkedIn profiles via direct LinkDAPI or RapidAPI |
 | `GITHUB_TOKEN` | Raises the GitHub rate limit from 60/hour |
 | `STORAGE_*` | Mirrors logos and photos into the self-hosted S3-compatible storage |
 | `AGENT_BRIDGE_SECRET` | The rep-facing Agent panel — see `agent.md` |

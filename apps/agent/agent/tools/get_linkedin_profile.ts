@@ -34,7 +34,10 @@ export default defineTool({
 		contactId,
 	}) {
 		if (!(await enabled("RAPIDAPI_KEY"))) {
-			return { found: false as const, ...unavailable("RAPIDAPI_KEY") };
+			return {
+				found: false as const,
+				...unavailable("LINKDAPI_API_KEY or RAPIDAPI_KEY"),
+			};
 		}
 
 		const charge = spend(includeHistory ? 2 : 1);

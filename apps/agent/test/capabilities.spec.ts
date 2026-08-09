@@ -9,6 +9,7 @@ import {
 
 const KEYS = [
 	"RAPIDAPI_KEY",
+	"LINKDAPI_API_KEY",
 	"OPENROUTER_API_KEY",
 	"STORAGE_ENDPOINT",
 ] as const;

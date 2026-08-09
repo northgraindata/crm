@@ -323,7 +323,7 @@ short version:
 | --- | --- |
 | `API_URL` / `APP_URL` | Where the two halves are served. Only needed off localhost. |
 | `OPENROUTER_API_KEY` | Runs the agent model and Perplexity Sonar web research with citations. |
-| `RAPIDAPI_KEY` | Lets the agent read LinkedIn profiles for identity. |
+| `LINKDAPI_API_KEY` / `RAPIDAPI_KEY` | Lets the agent read LinkedIn profiles for identity. Direct LinkDAPI is preferred. |
 | `AGENT_BRIDGE_SECRET` | Lets a rep talk to the agent from a contact's **Agent** tab. |
 | `REDIS_URL` | A shared cache. Without it, per-instance and in-memory. |
 | `CRON_SECRET` | Guards the mailbox sync route. Required to use it. |

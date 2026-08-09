@@ -12,7 +12,10 @@ export default defineTool({
 	}),
 	async execute({ contactId }) {
 		if (!(await enabled("RAPIDAPI_KEY"))) {
-			return { found: false as const, ...unavailable("RAPIDAPI_KEY") };
+			return {
+				found: false as const,
+				...unavailable("LINKDAPI_API_KEY or RAPIDAPI_KEY"),
+			};
 		}
 
 		const profileRef = await contactProfileSlug(contactId);

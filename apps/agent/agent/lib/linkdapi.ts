@@ -1,4 +1,5 @@
-const HOST = "linkdapi-best-unofficial-linkedin-api.p.rapidapi.com";
+const RAPIDAPI_HOST = "linkdapi-best-unofficial-linkedin-api.p.rapidapi.com";
+const DIRECT_BASE_URL = "https://linkdapi.com";
 const TIMEOUT_MS = 20_000;
 
 export type Profile = {
@@ -37,12 +38,32 @@ type Outcome<T> =
 	| { ok: false; missing: true }
 	| { ok: false; missing: false; reason: string };
 
-function key(): string | null {
-	return process.env.RAPIDAPI_KEY ?? null;
+function credentials(): {
+	baseUrl: string;
+	headers: Record<string, string>;
+} | null {
+	const direct = process.env.LINKDAPI_API_KEY?.trim();
+	if (direct) {
+		return {
+			baseUrl: DIRECT_BASE_URL,
+			headers: { "X-linkdapi-apikey": direct },
+		};
+	}
+
+	const rapid = process.env.RAPIDAPI_KEY?.trim();
+	if (!rapid) return null;
+
+	return {
+		baseUrl: `https://${RAPIDAPI_HOST}`,
+		headers: {
+			"x-rapidapi-host": RAPIDAPI_HOST,
+			"x-rapidapi-key": rapid,
+		},
+	};
 }
 
 export function linkedinEnabled(): boolean {
-	return key() !== null;
+	return credentials() !== null;
 }
 
 export function slugFromProfileUrl(raw: string | null): string | null {
@@ -158,10 +179,16 @@ async function call<T>(
 	path: string,
 	params: Record<string, string>,
 ): Promise<Outcome<T>> {
-	const apiKey = key();
-	if (!apiKey) return { ok: false, missing: false, reason: "No RAPIDAPI_KEY." };
+	const auth = credentials();
+	if (!auth) {
+		return {
+			ok: false,
+			missing: false,
+			reason: "No LINKDAPI_API_KEY or RAPIDAPI_KEY.",
+		};
+	}
 
-	const url = new URL(`https://${HOST}${path}`);
+	const url = new URL(`${auth.baseUrl}${path}`);
 	for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
 
 	const controller = new AbortController();
@@ -169,7 +196,7 @@ async function call<T>(
 
 	try {
 		const response = await fetch(url, {
-			headers: { "x-rapidapi-host": HOST, "x-rapidapi-key": apiKey },
+			headers: auth.headers,
 			signal: controller.signal,
 		});
 
