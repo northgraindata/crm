@@ -109,6 +109,10 @@
         "typescript": "^5",
       },
     },
+    "apps/linkedin-extension": {
+      "name": "@crm/linkedin-extension",
+      "version": "0.0.1",
+    },
     "packages/auth": {
       "name": "@crm/auth",
       "version": "0.0.0",
@@ -408,6 +412,8 @@
     "@crm/db": ["@crm/db@workspace:packages/db"],
 
     "@crm/env": ["@crm/env@workspace:packages/env"],
+
+    "@crm/linkedin-extension": ["@crm/linkedin-extension@workspace:apps/linkedin-extension"],
 
     "@crm/telemetry": ["@crm/telemetry@workspace:packages/telemetry"],
 
