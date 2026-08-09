@@ -5,8 +5,10 @@ loadRootEnv();
 
 const apiUrl =
 	process.env.API_URL ??
-	process.env.NEXT_PUBLIC_API_URL ??
 	"http://localhost:3001";
+
+const publicApiUrl =
+	process.env.NEXT_PUBLIC_API_URL ?? process.env.APP_URL ?? apiUrl;
 
 const allowedDevOrigins = (process.env.APP_URL ?? "")
 	.split(",")
@@ -22,7 +24,7 @@ const nextConfig: NextConfig = {
 	allowedDevOrigins,
 
 	env: {
-		NEXT_PUBLIC_API_URL: apiUrl,
+		NEXT_PUBLIC_API_URL: publicApiUrl,
 	},
 
 	transpilePackages: ["@crm/auth", "@crm/db", "@crm/telemetry", "@crm/ui"],
