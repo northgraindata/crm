@@ -26,7 +26,7 @@ export const linkedinCaptureInput = z.object({
 		])
 		.optional(),
 	connectedAt: z.string().datetime().optional(),
-	createFollowUp: z.boolean().default(true),
+	createFollowUp: z.boolean().default(false),
 	followUpSubject: z.string().trim().optional(),
 	followUpBody: z.string().trim().optional(),
 	followUpDueAt: z.string().datetime().optional(),

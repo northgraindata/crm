@@ -1,6 +1,5 @@
 const api = globalThis.browser ?? globalThis.chrome;
 const configuredApiUrl = globalThis.NORTHGRAIN_EXTENSION_CONFIG?.apiUrl;
-
 const byId = (id) => document.getElementById(id);
 const storage = api.storage.local;
 
@@ -30,13 +29,9 @@ async function load() {
 		saved.apiUrl ?? configuredApiUrl ?? "http://localhost:3001";
 	byId("token").value = saved.token ?? "";
 	const tab = await getActiveTab();
-	if (tab?.url?.includes("linkedin.com/in/")) {
-		byId("status").textContent =
-			"LinkedIn profile URL detected. Confirm the fields manually.";
-	} else {
-		byId("status").textContent =
-			"Open a LinkedIn profile, then use the extension button.";
-	}
+	byId("status").textContent = tab?.url?.includes("linkedin.com/in/")
+		? "LinkedIn profile URL detected. Confirm the fields manually."
+		: "Open a LinkedIn profile, then use the extension button.";
 }
 
 byId("capture-form").addEventListener("submit", async (event) => {

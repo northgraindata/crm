@@ -15,7 +15,6 @@ COPY . .
 ARG API_URL=http://api:3001
 ARG PUBLIC_API_URL=http://localhost:3001
 ARG AGENT_URL=http://agent:2000
-ARG NEXT_PUBLIC_API_URL=http://localhost:3001
 
 ENV NODE_ENV=production \
     DATABASE_URL=postgresql://crm:build@127.0.0.1:5432/crm?schema=public \
@@ -23,8 +22,7 @@ ENV NODE_ENV=production \
     ALLOWED_SIGN_IN=build.invalid \
     API_URL=${API_URL} \
     PUBLIC_API_URL=${PUBLIC_API_URL} \
-    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
-    NEXT_PUBLIC_API_URL=${API_URL} \
+    NEXT_PUBLIC_API_URL=${PUBLIC_API_URL} \
     APP_URL=http://127.0.0.1:3000 \
     AGENT_URL=${AGENT_URL} \
     OPENROUTER_API_KEY=build-only
@@ -34,10 +32,13 @@ RUN bun run db:generate
 RUN bun run --filter=api build
 RUN bun run --filter=agent build
 RUN bun run --filter=app build
-RUN mkdir -p apps/app/public/downloads/northgrain-linkedin-extension
-RUN cp apps/linkedin-extension/* apps/app/public/downloads/northgrain-linkedin-extension/
-RUN node -e 'const fs = require("node:fs"); const path = "apps/app/public/downloads/northgrain-linkedin-extension/config.js"; const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"; fs.writeFileSync(path, `globalThis.NORTHGRAIN_EXTENSION_CONFIG = { apiUrl: ${JSON.stringify(url)} };\n`);'
-RUN cd apps/app/public/downloads/northgrain-linkedin-extension && zip -qr ../northgrain-linkedin-extension.zip .
+RUN mkdir -p apps/app/public/downloads/northgrain-linkedin-chrome apps/app/public/downloads/northgrain-linkedin-safari
+RUN cp apps/linkedin-extension/* apps/app/public/downloads/northgrain-linkedin-chrome/
+RUN cp apps/linkedin-extension/* apps/app/public/downloads/northgrain-linkedin-safari/
+RUN node -e 'const fs = require("node:fs"); for (const dir of ["apps/app/public/downloads/northgrain-linkedin-chrome", "apps/app/public/downloads/northgrain-linkedin-safari"]) { const path = `${dir}/config.js`; const url = process.env.PUBLIC_API_URL || "http://localhost:3001"; fs.writeFileSync(path, `globalThis.NORTHGRAIN_EXTENSION_CONFIG = { apiUrl: ${JSON.stringify(url)} };\n`); }'
+RUN cd apps/app/public/downloads/northgrain-linkedin-chrome && zip -qr ../northgrain-linkedin-chrome.zip .
+RUN cd apps/app/public/downloads/northgrain-linkedin-safari && zip -qr ../northgrain-linkedin-safari.zip .
+RUN cp apps/app/public/downloads/northgrain-linkedin-chrome.zip apps/app/public/downloads/northgrain-linkedin-extension.zip
 
 FROM base AS runtime
 

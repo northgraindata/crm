@@ -60,7 +60,7 @@ export class LinkedInCaptureService {
 				"linkedin-status-connected";
 
 		let taskId: string | null = null;
-		if (input.createFollowUp || transitioned) {
+		if (input.createFollowUp) {
 			const existingTask = await this.db.activity.findFirst({
 				where: {
 					type: ActivityType.TASK,
