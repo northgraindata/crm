@@ -12,7 +12,7 @@ x-crm-environment: &crm-environment
   DATABASE_URL: postgresql://crm:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/crm?schema=public
   REDIS_URL: redis://:${SERVICE_PASSWORD_REDIS}@redis:6379
   AGENT_URL: http://agent:2000
-  APP_URL: ${SERVICE_URL_WEB_3000}
+  APP_URL: ${SERVICE_URL_WEB}
   BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a random secret of at least 32 characters}
   ALLOWED_SIGN_IN: ${ALLOWED_SIGN_IN:?Set an allowed email address or domain}
   AGENT_BRIDGE_SECRET: ${SERVICE_REALBASE64_64_AGENT}
@@ -23,7 +23,7 @@ x-crm-environment: &crm-environment
   STORAGE_BUCKET: crm
   STORAGE_ACCESS_KEY_ID: crm
   STORAGE_SECRET_ACCESS_KEY: ${SERVICE_PASSWORD_64_MINIO}
-  STORAGE_PUBLIC_URL: ${SERVICE_URL_WEB_3000}/media
+  STORAGE_PUBLIC_URL: ${SERVICE_URL_WEB}/media
   GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
   GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
   MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
@@ -115,7 +115,7 @@ services:
     restart: unless-stopped
     environment:
       <<: *crm-environment
-      API_URL: ${SERVICE_URL_WEB_3000}
+      API_URL: ${SERVICE_URL_WEB}
       PORT: "3001"
     command: ["bun", "run", "--cwd", "apps/api", "start:prod"]
     depends_on:
@@ -160,7 +160,6 @@ services:
       NEXT_PUBLIC_API_URL: http://api:3001
       PORT: "3000"
       HOSTNAME: 0.0.0.0
-      SERVICE_URL_WEB_3000: ${SERVICE_URL_WEB_3000}
     command: ["bun", "run", "--cwd", "apps/app", "start"]
     depends_on:
       api:
