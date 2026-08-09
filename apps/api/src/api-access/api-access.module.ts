@@ -5,6 +5,7 @@ import { CompaniesModule } from "../companies/companies.module";
 import { ContactsModule } from "../contacts/contacts.module";
 import { DealsModule } from "../deals/deals.module";
 import { FieldsModule } from "../fields/fields.module";
+import { SurveysModule } from "../surveys/surveys.module";
 import { TrpcModule } from "../trpc/trpc.module";
 import { ApiAccessController } from "./api-access.controller";
 import { ApiAccessGuard } from "./api-access.guard";
@@ -21,6 +22,7 @@ import { LinkedInCaptureService } from "./linkedin-capture.service";
 		AgentModule,
 		FieldsModule,
 		ActivitiesModule,
+		SurveysModule,
 	],
 	controllers: [ApiAccessController],
 	providers: [

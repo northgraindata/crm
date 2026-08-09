@@ -28,6 +28,7 @@ import { googleConnectionInput, setAutoCreateInput, suppressDomainInput, threadI
 import { microsoftConnectionInput, setOutlookAutoCreateInput } from "../microsoft/microsoft.contracts";
 import { setAgentModelInput, setResearchKeyInput } from "../settings/settings.contracts";
 import { ssoProviderListInput, registerSsoProviderInput, deleteSsoProviderInput } from "../sso/sso.contracts";
+import { surveyListInput, surveyResponseListInput, surveyResponseIdInput } from "../surveys/surveys.contracts";
 import { memberListInput, updateWorkspaceInput, setMemberRoleInput } from "../workspace/workspace.contracts";
 import { zohoConnectionInput, setZohoAutoCreateInput } from "../zoho/zoho.contracts";
 import type { ActivitiesRouter } from "../activities/activities.router";
@@ -46,6 +47,7 @@ import type { MicrosoftRouter } from "../microsoft/microsoft.router";
 import type { SearchRouter } from "../search/search.router";
 import type { SettingsRouter } from "../settings/settings.router";
 import type { SsoRouter } from "../sso/sso.router";
+import type { SurveysRouter } from "../surveys/surveys.router";
 import type { UsersRouter } from "../users/users.router";
 import type { WorkspaceRouter } from "../workspace/workspace.router";
 import type { ZohoRouter } from "../zoho/zoho.router";
@@ -428,6 +430,17 @@ const appRouter = t.router({
     remove: publicProcedure
       .input(deleteSsoProviderInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<SsoRouter["remove"]>>)
+    }),
+  surveys: t.router({
+    list: publicProcedure
+      .input(surveyListInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<SurveysRouter["list"]>>),
+    responses: publicProcedure
+      .input(surveyResponseListInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<SurveysRouter["responses"]>>),
+    response: publicProcedure
+      .input(surveyResponseIdInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<SurveysRouter["response"]>>)
     }),
   users: t.router({
     me: publicProcedure

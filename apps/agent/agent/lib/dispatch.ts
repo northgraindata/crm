@@ -125,6 +125,9 @@ export function taskAuth(task: LeasedTask, base: AppAuth = APP_AUTH): AppAuth {
 			budget: String(task.budget),
 			...(task.contactId ? { contactId: task.contactId } : {}),
 			...(task.companyId ? { companyId: task.companyId } : {}),
+			...(task.surveyResponseId
+				? { surveyResponseId: task.surveyResponseId }
+				: {}),
 		},
 	};
 }
@@ -142,15 +145,21 @@ export function brief(task: LeasedTask): string {
 			? `This is attempt ${task.attempts}; the earlier one did not finish. Carry on from what is already in this thread rather than starting again. `
 			: "";
 
-	return again + work(task.kind, task.reason);
+	return again + work(task.kind, task.reason, task.surveyResponseId);
 }
 
-function work(kind: string, reason: string): string {
+function work(
+	kind: string,
+	reason: string,
+	surveyResponseId: string | null,
+): string {
 	switch (kind) {
 		case "identify":
 			return "Work out who this contact actually is, and record what you find. Read what we already have before spending anything.";
 		case "relationship-triage":
 			return "Research this newly captured relationship, classify its role and relevance, update supported contact fields with evidence, and create one useful manual follow-up task with a suggested message when outreach is appropriate.";
+		case "survey-analysis":
+			return `Analyze survey response ${surveyResponseId ?? "provided in the task context"}. Call read_survey_response first, identify decision-relevant themes and signals, assess ICP fit, and call analyze_survey_response once with a concise evidence-based analysis. Do not invent answers or contact details.`;
 		case "profile":
 		case "recheck":
 			return "Bring this contact's record up to date: their background, their current role, and anything that has changed since we last looked.";

@@ -28,6 +28,7 @@ import { MicrosoftModule } from "./microsoft/microsoft.module";
 import { SearchModule } from "./search/search.module";
 import { SettingsModule } from "./settings/settings.module";
 import { SsoModule } from "./sso/sso.module";
+import { SurveysModule } from "./surveys/surveys.module";
 import { SyncModule } from "./sync/sync.module";
 import { TelemetryModule } from "./telemetry/telemetry.module";
 import { TrpcModule } from "./trpc/trpc.module";
@@ -57,6 +58,7 @@ import { ZohoModule } from "./zoho/zoho.module";
 		CurrencyModule,
 		DealsModule,
 		EngagementsModule,
+		SurveysModule,
 		FieldsModule,
 		ActivitiesModule,
 		ApiAccessModule,

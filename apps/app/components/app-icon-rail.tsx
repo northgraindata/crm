@@ -6,6 +6,7 @@ import Chat from "@carbon/icons-react/es/Chat";
 import Close from "@carbon/icons-react/es/Close";
 import Dashboard from "@carbon/icons-react/es/Dashboard";
 import Partnership from "@carbon/icons-react/es/Partnership";
+import ReportData from "@carbon/icons-react/es/ReportData";
 import Settings from "@carbon/icons-react/es/Settings";
 import Task from "@carbon/icons-react/es/Task";
 import UserMultiple from "@carbon/icons-react/es/UserMultiple";
@@ -57,6 +58,7 @@ const ITEMS: RailItem[] = [
 	},
 	{ title: "Deals", href: "/deals", icon: Partnership, match: "prefix" },
 	{ title: "Delivery", href: "/engagements", icon: Task, match: "prefix" },
+	{ title: "Surveys", href: "/surveys", icon: ReportData, match: "prefix" },
 	{ title: "Settings", href: "/settings", icon: Settings, match: "prefix" },
 ];
 

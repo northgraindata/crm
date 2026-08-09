@@ -41,6 +41,11 @@ import {
 	dealUpdateArgs,
 } from "../deals/deals.contracts";
 import { DealsService } from "../deals/deals.service";
+import {
+	surveyResponseIngestInput,
+	surveyResponseListInput,
+} from "../surveys/surveys.contracts";
+import { SurveysService } from "../surveys/surveys.service";
 import { ApiAccessGuard, type ApiRequest } from "./api-access.guard";
 import { linkedinCaptureInput } from "./linkedin-capture.contracts";
 import { LinkedInCaptureService } from "./linkedin-capture.service";
@@ -56,6 +61,7 @@ export class ApiAccessController {
 		private readonly deals: DealsService,
 		private readonly linkedin: LinkedInCaptureService,
 		private readonly activities: ActivitiesService,
+		private readonly surveys: SurveysService,
 	) {}
 
 	@Get("me")
@@ -77,6 +83,41 @@ export class ApiAccessController {
 			parseInput(linkedinCaptureInput, body),
 			request.apiToken.userId,
 		);
+	}
+
+	@Post("surveys/responses")
+	async surveyResponse(@Req() request: ApiRequest, @Body() body: unknown) {
+		requireWrite(request);
+		return this.surveys.ingest(parseInput(surveyResponseIngestInput, body));
+	}
+
+	@Get("surveys")
+	async surveysList(@Req() request: ApiRequest) {
+		requireRead(request);
+		return this.surveys.listSurveys({});
+	}
+
+	@Get("surveys/responses")
+	async surveyResponsesList(
+		@Req() request: ApiRequest,
+		@Query() query: Record<string, string>,
+	) {
+		requireRead(request);
+		return this.surveys.listResponses(
+			parseInput(surveyResponseListInput, {
+				...query,
+				limit: number(query.limit, 50),
+			}),
+		);
+	}
+
+	@Get("surveys/responses/:id")
+	async surveyResponseById(
+		@Req() request: ApiRequest,
+		@Param("id") id: string,
+	) {
+		requireRead(request);
+		return this.surveys.byId(id);
 	}
 
 	@Get("activities")
