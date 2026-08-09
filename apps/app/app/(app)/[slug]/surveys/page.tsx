@@ -21,6 +21,7 @@ import { requireSession } from "@/lib/session";
 import { getServerQueryClient, getServerTrpc } from "@/lib/trpc/server";
 
 export const metadata: Metadata = { title: "Surveys" };
+export const instant = false;
 
 export default async function SurveysPage({
 	params,
