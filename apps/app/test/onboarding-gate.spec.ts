@@ -170,6 +170,16 @@ describe("proxy", () => {
 		expect(redirectedTo(await proxy(request("/sign-in")))).toBeNull();
 	});
 
+	it("keeps extension downloads public", async () => {
+		marketing(undefined);
+
+		expect(
+			redirectedTo(
+				await proxy(request("/downloads/northgrain-linkedin-extension.zip")),
+			),
+		).toBeNull();
+	});
+
 	it("never aims a redirect at the sign-in page itself", async () => {
 		marketing(undefined);
 		setup({ onboarded: false, configured: false });

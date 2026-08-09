@@ -71,7 +71,10 @@ function isUnder(pathname: string, prefix: string): boolean {
 }
 
 function isPublic(pathname: string): boolean {
-	return pathname === LANDING_PATH && isMarketing();
+	return (
+		(pathname === LANDING_PATH && isMarketing()) ||
+		isUnder(pathname, "/downloads")
+	);
 }
 
 function isUngated(pathname: string): boolean {
