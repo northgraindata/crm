@@ -13,8 +13,8 @@ export function LinkedinExtension() {
 			<CardHeader>
 				<CardTitle>LinkedIn extension</CardTitle>
 				<CardDescription>
-					Save LinkedIn profiles to Northgrain with a manual confirmation before
-					creating a contact or follow-up.
+					Save visible LinkedIn profile details to Northgrain after reviewing
+					them.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-4">
@@ -37,7 +37,8 @@ export function LinkedinExtension() {
 					<p className="font-medium">Chrome</p>
 					<p className="text-muted-foreground">
 						Unzip the Chrome package, open chrome://extensions, enable Developer
-						mode, and choose Load unpacked.
+						mode, and choose Load unpacked. Refresh LinkedIn, then use Add to
+						Northgrain beside a profile&apos;s actions.
 					</p>
 					<p className="font-medium">Safari</p>
 					<p className="text-muted-foreground">
@@ -47,7 +48,9 @@ export function LinkedinExtension() {
 					</p>
 					<p className="text-muted-foreground text-xs">
 						The package includes this CRM&apos;s public API URL. The extension
-						stores your API token locally in the browser.
+						stores your API token locally in the browser. Accepting a LinkedIn
+						invitation also opens a confirmation with an optional message
+						follow-up task.
 					</p>
 				</div>
 			</CardContent>

@@ -23,6 +23,12 @@ function text(value) {
 	return typeof value === "string" ? value.trim() : "";
 }
 
+async function saveConnection() {
+	const apiUrl = text(byId("api-url").value).replace(/\/$/, "");
+	const token = text(byId("token").value);
+	await setStored({ apiUrl, token });
+}
+
 async function load() {
 	const saved = await getStored();
 	byId("api-url").value =
@@ -34,6 +40,16 @@ async function load() {
 		: "Open a LinkedIn profile, then use the extension button.";
 }
 
+byId("api-url").addEventListener("change", async () => {
+	await saveConnection();
+	byId("status").textContent = "Connection settings saved.";
+});
+
+byId("token").addEventListener("change", async () => {
+	await saveConnection();
+	byId("status").textContent = "Connection settings saved.";
+});
+
 byId("capture-form").addEventListener("submit", async (event) => {
 	event.preventDefault();
 	const status = byId("status");
@@ -42,9 +58,9 @@ byId("capture-form").addEventListener("submit", async (event) => {
 		const tab = await getActiveTab();
 		if (!tab?.url?.includes("linkedin.com/in/"))
 			throw new Error("The active tab is not a LinkedIn profile.");
+		await saveConnection();
 		const apiUrl = text(byId("api-url").value).replace(/\/$/, "");
 		const token = text(byId("token").value);
-		await setStored({ apiUrl, token });
 		const response = await fetch(`${apiUrl}/api/v1/linkedin/captures`, {
 			method: "POST",
 			headers: {
