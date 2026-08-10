@@ -3,6 +3,8 @@
 	const PROFILE_PATH = /^\/in\/[^/]+/;
 	const BUTTON_HOST_ID = "northgrain-profile-action";
 	const MODAL_HOST_ID = "northgrain-confirmation";
+	const PROFILE_ACTION =
+		/message|connect|follow|wiadomość|wiadomosc|połącz|polacz|obserwuj|mensaje|conectar|seguir|nachricht|vernetzen|folgen|messaggio|collegati|segui|mensagem|conectar|seguir/i;
 	let restoreFocus = null;
 	let inertState = [];
 
@@ -29,27 +31,138 @@
 			: "";
 	}
 
-	function profileDetails() {
-		const heading = [...document.querySelectorAll("main h1")].find(visibleText);
-		const section =
-			heading?.closest("section") ?? heading?.parentElement?.parentElement;
-		const name = personName(visibleText(heading));
-		const title = visibleText(
-			section?.querySelector(
-				".text-body-medium.break-words, [data-generated-suggestion-target] + div",
-			),
+	function safeExtractText(selector, fallback = "") {
+		return (
+			[...document.querySelectorAll(selector)]
+				.map((element) => clean(element.textContent))
+				.find(Boolean) ?? fallback
 		);
+	}
+
+	function isPersonName(value) {
+		const words = clean(value).split(" ").filter(Boolean);
+		return (
+			words.length >= 2 &&
+			words.length <= 4 &&
+			words.every((word) => /^[\p{L}'’-]+$/u.test(word)) &&
+			!/powiadomień|powiadomien|notifications|people|osoby/i.test(value)
+		);
+	}
+
+	function profileHeading() {
+		return [
+			...document.querySelectorAll(
+				"[data-anonymize='person-name'], .pv-text-details__left-panel h1, main h1, main h2",
+			),
+		].find((element) => isPersonName(visibleText(element)));
+	}
+
+	function profileName() {
+		const heading =
+			safeExtractText("main h2") ||
+			safeExtractText("main h1") ||
+			[...document.querySelectorAll("h2")]
+				.map((element) => clean(element.textContent))
+				.find(
+					(value) =>
+						value.split(/\s+/).length > 1 &&
+						!/powiadomień|powiadomien|notifications/i.test(value),
+				);
+		if (heading) return heading;
+
+		const metadata = [
+			document
+				.querySelector("meta[property='og:title']")
+				?.getAttribute("content"),
+			document
+				.querySelector("meta[name='description']")
+				?.getAttribute("content"),
+		]
+			.map(clean)
+			.find(Boolean);
+		if (metadata) {
+			return metadata
+				.replace(/(?:'s|’s) profile.*$/i, "")
+				.replace(/\s*[-|].*LinkedIn.*$/i, "");
+		}
+
+		const slug = /^\/in\/([^/]+)/.exec(location.pathname)?.[1];
+		return clean(slug?.replace(/-\d+$/, "").replace(/[-_]+/g, " "));
+	}
+
+	function profileSection() {
+		const heading = profileHeading();
+		return (
+			heading?.closest("section") ??
+			heading?.parentElement?.parentElement ??
+			document.querySelector("main")
+		);
+	}
+
+	function profileLines(section) {
+		return (section?.innerText ?? "").split(/\n+/).map(clean).filter(Boolean);
+	}
+
+	function currentExperience() {
+		const section = document.querySelector("[id*='ExperienceTopLevelSection']");
+		const details = [
+			...(section?.querySelectorAll("a > div > div > div") ?? []),
+		].find((element) => element.querySelectorAll(":scope > p").length >= 2);
+		const lines = [...(details?.querySelectorAll(":scope > p") ?? [])]
+			.map((element) => clean(element.textContent))
+			.filter(Boolean);
+		return {
+			title: lines[0] ?? "",
+			companyName: clean(lines[1]?.split(/\s*\u00b7\s*/)[0]),
+		};
+	}
+
+	function profileTitle() {
+		const experience = currentExperience();
+		return experience.title;
+	}
+
+	function profileEmail(section) {
+		const link = [
+			...(section?.querySelectorAll('a[href^="mailto:"]') ?? []),
+			...document.querySelectorAll('a[href^="mailto:"]'),
+		].find((element) => element instanceof HTMLAnchorElement);
+		const linkedEmail = clean(
+			link?.getAttribute("href")?.replace(/^mailto:/i, ""),
+		);
+		if (linkedEmail) return linkedEmail;
+		return (
+			profileLines(section)
+				.join(" ")
+				.match(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i)?.[0] ?? ""
+		);
+	}
+
+	function profileDetails() {
+		const section = profileSection();
+		const nameText = profileName();
+		const name = personName(nameText);
+		const title = profileTitle();
+		const experience = currentExperience();
 		const companyButton = section?.querySelector(
 			'button[aria-label*="company" i], button[aria-label*="current" i]',
 		);
-		const companyName = clean(companyButton?.getAttribute("aria-label"))
-			.replace(/^current company:\s*/i, "")
-			.replace(/^company:\s*/i, "");
+		const companyName =
+			experience.companyName ||
+			clean(companyButton?.getAttribute("aria-label"))
+				.replace(/^current company:\s*/i, "")
+				.replace(/^company:\s*/i, "") ||
+			visibleText(section?.querySelector('a[href*="/company/"]'));
+		const image = section?.querySelector(
+			"img.pv-top-card-profile-picture__image, img[alt*='profile photo' i]",
+		);
 		return {
 			profileUrl: canonicalProfileUrl(location.href),
 			...name,
 			title,
 			companyName,
+			email: profileEmail(section) || undefined,
+			imageUrl: image?.currentSrc || image?.src || undefined,
 			reason: "Potential client",
 			inbound: false,
 			connectionStatus: "unknown",
@@ -244,32 +357,135 @@
 		form.elements.firstName.focus();
 	}
 
-	function actionContainer() {
-		const heading = [...document.querySelectorAll("main h1")].find(visibleText);
-		const section =
-			heading?.closest("section") ?? heading?.parentElement?.parentElement;
+	function profileActionRow() {
+		const section = profileSection();
 		const action = [...(section?.querySelectorAll("button, a") ?? [])].find(
-			(element) => /message|connect|follow/i.test(visibleText(element)),
+			(element) => PROFILE_ACTION.test(visibleText(element)),
 		);
-		return action?.parentElement ?? null;
+		if (!action) return null;
+
+		let row = action.parentElement;
+		while (row && row !== section) {
+			const controls = [...row.querySelectorAll("button, a")].filter(
+				visibleText,
+			);
+			if (controls.length > 1) return row.parentElement ?? row;
+			row = row.parentElement;
+		}
+
+		return action.parentElement;
 	}
 
 	function mountProfileAction() {
-		if (!PROFILE_PATH.test(location.pathname)) return;
-		if (document.getElementById(BUTTON_HOST_ID)) return;
-		const container = actionContainer();
-		if (!container) return;
+		const existing = document.getElementById(BUTTON_HOST_ID);
+		if (!PROFILE_PATH.test(location.pathname)) {
+			existing?.remove();
+			return;
+		}
+		if (existing || !document.body) return;
+		const row = profileActionRow();
+		if (!row) return;
 		const host = document.createElement("span");
 		host.id = BUTTON_HOST_ID;
-		host.style.display = "inline-flex";
+		host.style.cssText =
+			"margin-inline-start:auto;display:inline-flex;flex-shrink:0;align-items:center;";
 		const root = host.attachShadow({ mode: "closed" });
 		root.innerHTML = `
-			<style>:host { display: inline-flex; } button { min-height: 40px; border: 1px solid #006b4f; border-radius: 20px; padding: 6px 16px; color: #fff; background: #006b4f; cursor: pointer; font: 600 14px/1 system-ui, sans-serif; transition: opacity 100ms ease-out, scale 100ms ease-out; } button:hover { opacity: 0.92; } button:active { scale: 0.96; } button:focus-visible { outline: 2px solid #006b4f; outline-offset: 2px; }</style>
-			<button type="button">Add to Northgrain</button>`;
-		root
-			.querySelector("button")
-			.addEventListener("click", () => openModal(profileDetails()));
-		container.append(host);
+  <style>
+    :host {
+      display: inline-flex;
+      vertical-align: middle;
+    }
+
+    button {
+      height: 32px;
+      min-height: 32px;
+      padding: 0 12px;
+
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+
+      border: 1px solid #006b4f;
+      border-radius: 16px;
+
+      background: #006b4f;
+      color: #fff;
+
+      cursor: pointer;
+
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 20px;
+
+      white-space: nowrap;
+
+      transition:
+        background-color 100ms ease-out,
+        transform 100ms ease-out;
+    }
+
+    button:hover {
+      background: #005c44;
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    button:focus-visible {
+      outline: 2px solid #006b4f;
+      outline-offset: 2px;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+    .logo {
+      width: 16px;
+      height: 16px;
+      display: block;
+      flex-shrink: 0;
+      object-fit: contain;
+	  filter: invert(100%);
+    }
+  </style>
+
+  <button
+    type="button"
+    aria-label="Add LinkedIn contact to Northgrain CRM"
+    aria-live="polite"
+  >
+    <img
+      class="logo"
+      src="https://northgraindata.com/images/branding/northgrain-icon.svg"
+      alt=""
+    />
+    <span>Add to CRM</span>
+  </button>
+`;
+		const button = root.querySelector("button");
+		button.addEventListener("click", async () => {
+			const details = profileDetails();
+			if (!details.profileUrl || !details.firstName) {
+				button.textContent = "Could not read profile";
+				return;
+			}
+			button.disabled = true;
+			button.textContent = "Saving…";
+			try {
+				await sendCapture(details);
+				button.textContent = "Added";
+			} catch {
+				button.disabled = false;
+				button.textContent = "Retry";
+			}
+		});
+		row.append(host);
 	}
 
 	function isAcceptButton(button) {
@@ -306,4 +522,7 @@
 		subtree: true,
 	});
 	mountProfileAction();
+	window.addEventListener("load", mountProfileAction);
+	setTimeout(mountProfileAction, 500);
+	setTimeout(mountProfileAction, 1500);
 })();
