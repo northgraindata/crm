@@ -298,18 +298,26 @@
 				!/accept|ignore|mutual|connection|wants to connect/i.test(line),
 		);
 		const image = card?.querySelector('a[href*="/in/"] img');
+		const companyLink = card?.querySelector('a[href*="/company/"]');
+		const companyImage = card
+			?.querySelector('svg[id^="company-accent-"]')
+			?.parentElement?.querySelector("img");
+		const companyName =
+			visibleText(companyLink) ||
+			clean(companyImage?.alt).replace(/\s+logo$/i, "");
 		return {
 			profileUrl: canonicalProfileUrl(profileLink?.href ?? ""),
 			...name,
 			title: clean(headline?.split(/\s*[|｜]\s*/)[0]),
 			headline: headline || undefined,
 			imageUrl: image?.currentSrc || image?.src || undefined,
-			companyName: "",
+			companyName,
+			companyLinkedInUrl: companyLink?.href || undefined,
 			reason: "Relationship",
 			inbound: true,
 			connectionStatus: "connected",
 			connectedAt: new Date().toISOString(),
-			createFollowUp: false,
+			createFollowUp: true,
 		};
 	}
 
@@ -396,7 +404,7 @@
 							<label>Company<input name="companyName" autocomplete="organization"></label>
 							<label>Company domain<input name="companyDomain" placeholder="example.com" inputmode="url"></label>
 							<label class="full">Relationship<select name="reason"><option>Potential client</option><option>Partner</option><option>Recruiter</option><option>Relationship</option><option>Other</option></select></label>
-							<label class="check full"><input name="createFollowUp" type="checkbox">Create a task to send a LinkedIn message</label>
+								<label class="check full"><input name="createFollowUp" type="checkbox">Remind me in Northgrain to send a LinkedIn message</label>
 						</div>
 						<p class="status" role="status" aria-live="polite"></p>
 						<div class="actions"><button class="secondary" type="button">Cancel</button><button class="primary" type="submit">Save person</button></div>
