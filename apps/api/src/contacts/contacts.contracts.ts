@@ -3,10 +3,13 @@ import { bulkIdsInput } from "../crm/bulk";
 import { recordFieldValues } from "../fields/fields.contracts";
 import { listInput } from "../trpc/list-input";
 
+export const contactStatus = z.enum(["TO_CONTACT", "CONTACTED"]);
+
 export const contactListInput = listInput.extend({
 	owner: z.string().default("all"),
 	company: z.string().default("all"),
 	source: z.string().default("all"),
+	status: z.string().default("all"),
 });
 
 export type ContactListInput = z.infer<typeof contactListInput>;
@@ -17,8 +20,10 @@ export const contactCreateInput = z.object({
 	email: z.email("That is not an email address.").optional().or(z.literal("")),
 	phone: z.string().trim().optional(),
 	title: z.string().trim().optional(),
+	imageUrl: z.string().url().optional(),
 	companyId: z.string().nullable().optional(),
 	ownerId: z.string().nullable().optional(),
+	status: contactStatus.optional(),
 });
 
 export type ContactCreateInput = z.infer<typeof contactCreateInput>;
@@ -29,11 +34,13 @@ const contactUpdateInput = z.object({
 	email: z.string().optional(),
 	phone: z.string().optional(),
 	title: z.string().optional(),
+	imageUrl: z.string().url().optional(),
 	linkedinUrl: z.string().optional(),
 	twitterUrl: z.string().optional(),
 	githubUrl: z.string().optional(),
 	companyId: z.string().nullable().optional(),
 	ownerId: z.string().nullable().optional(),
+	status: contactStatus.optional(),
 	fields: recordFieldValues.optional(),
 });
 
