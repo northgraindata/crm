@@ -7,6 +7,7 @@ import {
 } from "@crm/ui/components/data-table";
 import { EmptyCellValue } from "@crm/ui/components/empty-cell";
 import { PersonAvatar } from "@crm/ui/components/person-avatar";
+import { StatusIndicator } from "@crm/ui/components/status-indicator";
 import { useTableSelection } from "@crm/ui/hooks/use-table-selection";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -43,6 +44,19 @@ const COLUMNS: DataTableColumn<ContactRow>[] = [
 				/>
 				<span className="truncate font-medium">{contactName(row)}</span>
 			</span>
+		),
+	},
+	{
+		id: "status",
+		header: "Status",
+		sortable: true,
+		width: "w-[14%]",
+		cell: (row) => (
+			<StatusIndicator
+				tone={row.status === "TO_CONTACT" ? "warning" : "success"}
+				label={row.status === "TO_CONTACT" ? "To contact" : "Contacted"}
+				size="sm"
+			/>
 		),
 	},
 	{
@@ -150,6 +164,14 @@ export function ContactsTable() {
 					label: user.name,
 				})),
 			].filter((option) => (facetCounts?.owner?.[option.value] ?? 0) > 0),
+		},
+		{
+			id: "status",
+			label: "Status",
+			options: [
+				{ value: "TO_CONTACT", label: "To contact" },
+				{ value: "CONTACTED", label: "Contacted" },
+			].filter((option) => (facetCounts?.status?.[option.value] ?? 0) > 0),
 		},
 		{
 			id: "company",
