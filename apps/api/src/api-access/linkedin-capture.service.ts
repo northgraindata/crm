@@ -1,5 +1,4 @@
-import type { Db } from "@crm/db";
-import { ActivityType } from "@crm/db";
+import { ActivityType, ContactStatus, type Db } from "@crm/db";
 import { PRIORITY } from "@crm/db/agent-tasks";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { AgentTriggerService } from "../agent/agent-trigger.service";
@@ -34,7 +33,9 @@ export class LinkedInCaptureService {
 			? await this.contacts.update(existing.id, {
 					firstName: input.firstName,
 					lastName: input.lastName,
+					...(input.email ? { email: input.email } : {}),
 					title: input.title,
+					...(input.imageUrl ? { imageUrl: input.imageUrl } : {}),
 					linkedinUrl: profileUrl,
 					companyId,
 					fields: contactFields(input),
@@ -43,8 +44,12 @@ export class LinkedInCaptureService {
 					.create({
 						firstName: input.firstName,
 						lastName: input.lastName,
+						email: input.email,
 						title: input.title,
+						imageUrl: input.imageUrl,
 						companyId,
+						ownerId: userId,
+						status: ContactStatus.TO_CONTACT,
 					})
 					.then(async (created) => {
 						await this.contacts.update(created.id, {
