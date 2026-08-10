@@ -13,13 +13,13 @@ Extension target in Xcode, and select the extracted folder as its source.
 Open the extension from the browser toolbar once to save the CRM URL and a
 `crm:write` API token.
 
-On a LinkedIn profile, use Add to Northgrain beside the profile actions. The
-extension reads the visible name, title, company and profile URL, then opens a
-confirmation dialog before calling the CRM API.
+On a LinkedIn profile, use Add to CRM beside the profile actions. The extension
+reads the visible name, title, company, photo and profile URL, then saves the
+contact directly to the CRM.
 
-When you accept a LinkedIn invitation, the extension opens the same confirmation
-dialog after the acceptance. Creating a follow-up task to send a LinkedIn message
-is optional.
+When you accept a LinkedIn invitation, the extension opens a confirmation dialog
+after the acceptance. Creating a follow-up task to send a LinkedIn message is
+optional.
 
 The extension reads only information visible on the current LinkedIn page. It
 never sends LinkedIn messages.
