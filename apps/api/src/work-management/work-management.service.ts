@@ -37,6 +37,10 @@ const entryInclude = {
 	engagement: { include: { company: { select: { id: true, name: true } } } },
 } as const satisfies Prisma.TimeEntryInclude;
 
+const reminderInclude = {
+	document: { include: { teamMember: true } },
+} as const satisfies Prisma.TeamMemberReminderInclude;
+
 @Injectable()
 export class WorkManagementService {
 	constructor(@InjectDatabase() private readonly db: Db) {}
@@ -245,6 +249,15 @@ export class WorkManagementService {
 		return this.document(row);
 	}
 
+	async documents(teamMemberId: string) {
+		const rows = await this.db.teamMemberDocument.findMany({
+			where: { teamMemberId },
+			include: { reminders: true, teamMember: true },
+			orderBy: [{ status: "asc" }, { expiresAt: "asc" }, { createdAt: "desc" }],
+		});
+		return rows.map((row) => this.document(row));
+	}
+
 	async updateDocument(
 		id: string,
 		input: z.infer<typeof teamMemberDocumentUpdateInput>["data"],
@@ -262,21 +275,27 @@ export class WorkManagementService {
 	}
 
 	async reminders(input: z.infer<typeof reminderListInput>) {
-		return this.db.teamMemberReminder.findMany({
+		const rows = await this.db.teamMemberReminder.findMany({
 			where: {
+				...(input.teamMemberId
+					? { document: { teamMemberId: input.teamMemberId } }
+					: {}),
 				...(input.status ? { status: input.status } : {}),
 				...(input.channel ? { channel: input.channel } : {}),
 			},
-			include: { document: { include: { teamMember: true } } },
+			include: reminderInclude,
 			orderBy: { dueAt: "asc" },
 		});
+		return rows.map(serializeReminder);
 	}
 
 	async completeReminder(id: string) {
-		return this.db.teamMemberReminder.update({
+		const row = await this.db.teamMemberReminder.update({
 			where: { id },
 			data: { status: ReminderStatus.COMPLETED, completedAt: new Date() },
+			include: reminderInclude,
 		});
+		return serializeReminder(row);
 	}
 
 	async runDueReminders() {
@@ -536,6 +555,19 @@ function serializeEntry(
 		endedAt: row.endedAt?.toISOString() ?? null,
 		hourlyCostSnapshot:
 			row.hourlyCostSnapshot == null ? null : Number(row.hourlyCostSnapshot),
+	};
+}
+
+function serializeReminder(
+	row: Prisma.TeamMemberReminderGetPayload<{ include: typeof reminderInclude }>,
+) {
+	return {
+		...row,
+		dueAt: row.dueAt.toISOString(),
+		sentAt: row.sentAt?.toISOString() ?? null,
+		completedAt: row.completedAt?.toISOString() ?? null,
+		createdAt: row.createdAt.toISOString(),
+		updatedAt: row.updatedAt.toISOString(),
 	};
 }
 

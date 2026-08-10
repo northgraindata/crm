@@ -22,14 +22,14 @@ import { conversationListInput, builderResourceSearchInput, conversationIdInput,
 import { setReportingCurrencyInput, setManualRateInput, removeManualRateInput } from "../currency/currency.contracts";
 import { dashboardSummaryInput } from "../dashboard/dashboard.contracts";
 import { dealListInput, dealIdInput, dealCreateInput, dealUpdateArgs, setStageInput, dealContactsInput, dealAttachContactInput, dealDetachContactInput, dealContactRoleInput, dealBulkOwnerInput, dealBulkStageInput, dealBulkInput } from "../deals/deals.contracts";
-import { engagementListInput, engagementIdInput, engagementCreateInput, engagementUpdateArgs, teamMemberListInput, teamMemberCreateInput, teamMemberUpdateArgs } from "../engagements/engagements.contracts";
+import { engagementListInput, engagementIdInput, engagementCreateInput, engagementUpdateArgs, teamMemberListInput, teamMemberIdInput, teamMemberCreateInput, teamMemberUpdateArgs } from "../engagements/engagements.contracts";
 import { fieldListInput, fieldByKeyInput, fieldIdInput, fieldCreateInput, fieldUpdateArgs, fieldReorderInput } from "../fields/fields.contracts";
 import { googleConnectionInput, setAutoCreateInput, suppressDomainInput, threadInput, calendarEventInput } from "../google/google.contracts";
 import { microsoftConnectionInput, setOutlookAutoCreateInput } from "../microsoft/microsoft.contracts";
 import { setAgentModelInput, setResearchKeyInput } from "../settings/settings.contracts";
 import { ssoProviderListInput, registerSsoProviderInput, deleteSsoProviderInput } from "../sso/sso.contracts";
 import { surveyListInput, surveyResponseListInput, surveyResponseIdInput } from "../surveys/surveys.contracts";
-import { workTaskListInput, workTaskCreateInput, workTaskUpdateInput, workTaskMoveInput, timeEntryListInput, timeEntryCreateInput, timerInput, timeEntryIdInput, payrollSummaryInput, teamMemberDocumentCreateInput, teamMemberDocumentUpdateInput, reminderListInput, reminderIdInput } from "../work-management/work-management.contracts";
+import { workTaskListInput, workTaskCreateInput, workTaskUpdateInput, workTaskMoveInput, timeEntryListInput, timeEntryCreateInput, timerInput, timeEntryIdInput, payrollSummaryInput, teamMemberDocumentCreateInput, teamMemberDocumentListInput, teamMemberDocumentUpdateInput, reminderListInput, reminderIdInput } from "../work-management/work-management.contracts";
 import { memberListInput, updateWorkspaceInput, setMemberRoleInput } from "../workspace/workspace.contracts";
 import { zohoConnectionInput, setZohoAutoCreateInput } from "../zoho/zoho.contracts";
 import type { ActivitiesRouter } from "../activities/activities.router";
@@ -321,6 +321,9 @@ const appRouter = t.router({
     teamMembers: publicProcedure
       .input(teamMemberListInput)
       .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["teamMembers"]>>),
+    teamMember: publicProcedure
+      .input(teamMemberIdInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["teamMember"]>>),
     createTeamMember: publicProcedure
       .input(teamMemberCreateInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<EngagementsRouter["createTeamMember"]>>),
@@ -481,6 +484,9 @@ const appRouter = t.router({
     createDocument: publicProcedure
       .input(teamMemberDocumentCreateInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["createDocument"]>>),
+    documents: publicProcedure
+      .input(teamMemberDocumentListInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["documents"]>>),
     updateDocument: publicProcedure
       .input(teamMemberDocumentUpdateInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["updateDocument"]>>),

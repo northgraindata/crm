@@ -27,7 +27,9 @@ export function WorkTaskBoard({ engagementId }: { engagementId: string }) {
 	const tasks = useQuery(
 		trpc.workManagement.tasks.queryOptions({ engagementId }),
 	);
-	const teamMembers = useQuery(trpc.engagements.teamMembers.queryOptions({}));
+	const teamMembers = useQuery(
+		trpc.engagements.teamMembers.queryOptions({ pageSize: 100 }),
+	);
 	const entries = useQuery(
 		trpc.workManagement.timeEntries.queryOptions({ engagementId }),
 	);
@@ -102,7 +104,7 @@ export function WorkTaskBoard({ engagementId }: { engagementId: string }) {
 					className="h-10 rounded-md border bg-background px-3 text-sm"
 				>
 					<option value="">Assign later</option>
-					{(teamMembers.data ?? []).map((member) => (
+					{(teamMembers.data?.rows ?? []).map((member) => (
 						<option key={member.id} value={member.id}>
 							{member.name}
 						</option>
@@ -119,7 +121,7 @@ export function WorkTaskBoard({ engagementId }: { engagementId: string }) {
 					className="h-10 rounded-md border bg-background px-3 text-sm"
 				>
 					<option value="">Log time for...</option>
-					{(teamMembers.data ?? []).map((member) => (
+					{(teamMembers.data?.rows ?? []).map((member) => (
 						<option key={member.id} value={member.id}>
 							{member.name}
 						</option>

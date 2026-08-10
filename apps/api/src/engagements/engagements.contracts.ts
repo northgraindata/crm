@@ -9,6 +9,7 @@ import {
 } from "@crm/db";
 import { z } from "zod";
 import { currencyCode } from "../currency/currency.contracts";
+import { listInput } from "../trpc/list-input";
 
 export const engagementType = z.enum(
 	Object.values(EngagementType) as [EngagementType, ...EngagementType[]],
@@ -80,9 +81,12 @@ export const engagementUpdateArgs = z.object({
 	data: engagementCreateInput.partial(),
 });
 
-export const teamMemberListInput = z.object({
-	status: teamMemberStatus.optional(),
+export const teamMemberListInput = listInput.extend({
+	status: z.string().default("all"),
+	employmentType: z.string().default("all"),
 });
+
+export const teamMemberIdInput = z.object({ id: z.string().min(1) });
 
 export const teamMemberCreateInput = z.object({
 	name: z.string().trim().min(1),

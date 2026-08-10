@@ -6,6 +6,12 @@ import {
 } from "@nestjs/common";
 import type { z } from "zod";
 import { InjectDatabase } from "../database/database.constants";
+import {
+	countsByKey,
+	type ListResult,
+	paginate,
+	resolveOrderBy,
+} from "../trpc/list-input";
 import type {
 	engagementCreateInput,
 	engagementListInput,
@@ -27,6 +33,27 @@ const include = {
 
 type EngagementRow = Prisma.EngagementGetPayload<{ include: typeof include }>;
 type EngagementAssignmentRow = EngagementRow["assignments"][number];
+
+type TeamMemberRow = ReturnType<typeof serializeTeamMember>;
+
+const TEAM_MEMBER_SORTABLE: Record<
+	string,
+	(dir: Prisma.SortOrder) => Prisma.TeamMemberOrderByWithRelationInput[]
+> = {
+	name: (dir) => [{ name: dir }],
+	email: (dir) => [{ email: { sort: dir, nulls: "last" } }],
+	role: (dir) => [{ role: { sort: dir, nulls: "last" } }, { name: "asc" }],
+	status: (dir) => [{ status: dir }, { name: "asc" }],
+	employmentType: (dir) => [{ employmentType: dir }, { name: "asc" }],
+	weeklyCapacity: (dir) => [
+		{ weeklyCapacity: { sort: dir, nulls: "last" } },
+		{ name: "asc" },
+	],
+	startDate: (dir) => [
+		{ startDate: { sort: dir, nulls: "last" } },
+		{ name: "asc" },
+	],
+};
 
 @Injectable()
 export class EngagementsService {
@@ -145,12 +172,68 @@ export class EngagementsService {
 		return { id };
 	}
 
-	async listTeamMembers(input: z.infer<typeof teamMemberListInput>) {
-		const rows = await this.db.teamMember.findMany({
-			where: input.status ? { status: input.status } : {},
-			orderBy: [{ status: "asc" }, { name: "asc" }],
-		});
-		return rows.map(serializeTeamMember);
+	async listTeamMembers(
+		input: z.infer<typeof teamMemberListInput>,
+	): Promise<ListResult<TeamMemberRow>> {
+		const search: Prisma.TeamMemberWhereInput = input.q
+			? {
+					OR: [
+						{ name: { contains: input.q, mode: "insensitive" } },
+						{ email: { contains: input.q, mode: "insensitive" } },
+						{ role: { contains: input.q, mode: "insensitive" } },
+					],
+				}
+			: {};
+		const status: Prisma.TeamMemberWhereInput =
+			input.status === "ACTIVE" || input.status === "INACTIVE"
+				? { status: input.status }
+				: {};
+		const employment: Prisma.TeamMemberWhereInput =
+			input.employmentType === "EMPLOYEE" ||
+			input.employmentType === "CONTRACTOR" ||
+			input.employmentType === "AGENCY"
+				? { employmentType: input.employmentType }
+				: {};
+		const where = { ...search, ...status, ...employment };
+		const { skip, take } = paginate(input);
+
+		const [rows, total, statusGroups, employmentGroups] = await Promise.all([
+			this.db.teamMember.findMany({
+				where,
+				skip,
+				take,
+				orderBy: resolveOrderBy(input, TEAM_MEMBER_SORTABLE, [
+					{ status: "asc" },
+					{ name: "asc" },
+				]),
+			}),
+			this.db.teamMember.count({ where }),
+			this.db.teamMember.groupBy({
+				by: ["status"],
+				where: { ...search, ...employment },
+				_count: { _all: true },
+			}),
+			this.db.teamMember.groupBy({
+				by: ["employmentType"],
+				where: { ...search, ...status },
+				_count: { _all: true },
+			}),
+		]);
+
+		return {
+			rows: rows.map(serializeTeamMember),
+			total,
+			facetCounts: {
+				status: countsByKey(statusGroups, "status"),
+				employmentType: countsByKey(employmentGroups, "employmentType"),
+			},
+		};
+	}
+
+	async teamMember(id: string) {
+		const row = await this.db.teamMember.findUnique({ where: { id } });
+		if (!row) throw new NotFoundException(`No team member with id ${id}.`);
+		return serializeTeamMember(row);
 	}
 
 	async createTeamMember(input: z.infer<typeof teamMemberCreateInput>) {
@@ -234,19 +317,7 @@ function teamMemberData(
 	return data as Prisma.TeamMemberUncheckedCreateInput;
 }
 
-function serializeTeamMember(row: {
-	id: string;
-	name: string;
-	email: string | null;
-	role: string | null;
-	status: string;
-	employmentType: string;
-	hourlyCost: unknown;
-	weeklyCapacity: unknown;
-	startDate: Date | null;
-	endDate: Date | null;
-	userId: string | null;
-}) {
+function serializeTeamMember(row: Prisma.TeamMemberGetPayload<object>) {
 	return {
 		...row,
 		hourlyCost: numberOrNull(row.hourlyCost),

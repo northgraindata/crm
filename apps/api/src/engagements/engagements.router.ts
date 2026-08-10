@@ -8,6 +8,7 @@ import {
 	engagementListInput,
 	engagementUpdateArgs,
 	teamMemberCreateInput,
+	teamMemberIdInput,
 	teamMemberListInput,
 	teamMemberUpdateArgs,
 } from "./engagements.contracts";
@@ -49,6 +50,11 @@ export class EngagementsRouter {
 	@Query({ input: teamMemberListInput })
 	async teamMembers(@Input() input: z.infer<typeof teamMemberListInput>) {
 		return this.engagements.listTeamMembers(input);
+	}
+
+	@Query({ input: teamMemberIdInput })
+	async teamMember(@Input("id") id: string) {
+		return this.engagements.teamMember(id);
 	}
 
 	@Mutation({ input: teamMemberCreateInput })

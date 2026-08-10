@@ -97,12 +97,17 @@ export const teamMemberDocumentCreateInput = z.object({
 	notes: z.string().trim().max(2000).nullable().optional(),
 });
 
+export const teamMemberDocumentListInput = z.object({
+	teamMemberId: z.string().min(1),
+});
+
 export const teamMemberDocumentUpdateInput = z.object({
 	id: z.string().min(1),
 	data: teamMemberDocumentCreateInput.partial(),
 });
 
 export const reminderListInput = z.object({
+	teamMemberId: z.string().min(1).optional(),
 	status: reminderStatus.optional(),
 	channel: reminderChannel.optional(),
 });

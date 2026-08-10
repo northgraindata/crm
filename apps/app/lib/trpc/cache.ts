@@ -30,6 +30,7 @@ export type CrmCache = {
 	zoho(options?: Options): Promise<void>;
 	settings(options?: Options): Promise<void>;
 	currency(options?: Options): Promise<void>;
+	team(id?: string, options?: Options): Promise<void>;
 	workspace(options?: Options): Promise<void>;
 	sso(options?: Options): Promise<void>;
 	everything(): Promise<void>;
@@ -273,6 +274,22 @@ export function useCrmCache(): CrmCache {
 					trpc.deals.byId.queryKey(),
 					trpc.companies.byId.queryKey(),
 					trpc.dashboard.summary.queryKey(),
+				],
+				options,
+			),
+
+		team: (id, options) =>
+			run(
+				[
+					id
+						? trpc.engagements.teamMember.queryKey({ id })
+						: trpc.engagements.teamMember.queryKey(),
+				],
+				[
+					trpc.engagements.teamMembers.queryKey(),
+					trpc.workManagement.payroll.queryKey(),
+					trpc.workManagement.documents.queryKey(),
+					trpc.workManagement.reminders.queryKey(),
 				],
 				options,
 			),
