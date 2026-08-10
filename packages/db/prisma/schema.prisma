@@ -444,6 +444,7 @@ model Contact {
   primaryOf Company? @relation("PrimaryContact")
 
   source RecordSource @default(MANUAL)
+  status ContactStatus @default(CONTACTED)
 
   lastActivityAt DateTime?
 
@@ -460,7 +461,13 @@ model Contact {
   @@index([companyId])
   @@index([ownerId])
   @@index([lastActivityAt])
+  @@index([status])
   @@map("contact")
+}
+
+enum ContactStatus {
+  TO_CONTACT
+  CONTACTED
 }
 
 enum FactBand {
