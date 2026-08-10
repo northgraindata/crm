@@ -14,7 +14,7 @@ import {
 	SheetTrigger,
 } from "@crm/ui/components/sheet";
 import { Spinner } from "@crm/ui/components/spinner";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { parseAsBoolean, parseAsString, useQueryState } from "nuqs";
 import { type ComponentProps, Suspense } from "react";
 import { toast } from "sonner";
@@ -47,6 +47,7 @@ function CreateTeamMemberForm() {
 		parseAsBoolean.withDefault(false),
 	);
 	const [, setMemberId] = useQueryState("member", parseAsString);
+	const currency = useQuery(trpc.currency.settings.queryOptions());
 	const create = useMutation(
 		trpc.engagements.createTeamMember.mutationOptions({
 			onSuccess: async (member) => {
@@ -75,6 +76,7 @@ function CreateTeamMemberForm() {
 					<TeamMemberForm
 						key={String(open)}
 						formId="create-team-member"
+						currency={currency.data?.reportingCurrency ?? "USD"}
 						onSubmit={(value) => create.mutate(value)}
 					/>
 				</div>

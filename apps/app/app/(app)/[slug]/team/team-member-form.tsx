@@ -56,10 +56,12 @@ function numberValue(value: string): number | null {
 export function TeamMemberForm({
 	formId,
 	initialValue = EMPTY_MEMBER,
+	currency,
 	onSubmit,
 }: {
 	formId: string;
 	initialValue?: TeamMemberValue;
+	currency: string;
 	onSubmit: (value: TeamMemberValue) => void;
 }) {
 	const [name, setName] = useState(initialValue.name);
@@ -194,7 +196,9 @@ export function TeamMemberForm({
 					</Select>
 				</Field>
 				<Field>
-					<FieldLabel htmlFor={hourlyCostId}>Hourly cost</FieldLabel>
+					<FieldLabel htmlFor={hourlyCostId}>
+						Hourly cost ({currency})
+					</FieldLabel>
 					<Input
 						id={hourlyCostId}
 						name="hourlyCost"
@@ -207,7 +211,9 @@ export function TeamMemberForm({
 					/>
 				</Field>
 				<Field>
-					<FieldLabel htmlFor={weeklyCapacityId}>Weekly capacity</FieldLabel>
+					<FieldLabel htmlFor={weeklyCapacityId}>
+						Weekly capacity (hours)
+					</FieldLabel>
 					<Input
 						id={weeklyCapacityId}
 						name="weeklyCapacity"
@@ -220,7 +226,7 @@ export function TeamMemberForm({
 					/>
 				</Field>
 				<Field>
-					<FieldLabel htmlFor={startDateId}>Start date</FieldLabel>
+					<FieldLabel htmlFor={startDateId}>Start date (optional)</FieldLabel>
 					<Input
 						id={startDateId}
 						name="startDate"
@@ -230,7 +236,7 @@ export function TeamMemberForm({
 					/>
 				</Field>
 				<Field>
-					<FieldLabel htmlFor={endDateId}>End date</FieldLabel>
+					<FieldLabel htmlFor={endDateId}>End date (optional)</FieldLabel>
 					<Input
 						id={endDateId}
 						name="endDate"

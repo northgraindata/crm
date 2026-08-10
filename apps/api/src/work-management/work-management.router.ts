@@ -7,6 +7,7 @@ import {
 	reminderIdInput,
 	reminderListInput,
 	teamMemberDocumentCreateInput,
+	teamMemberDocumentFileInput,
 	teamMemberDocumentListInput,
 	teamMemberDocumentUpdateInput,
 	timeEntryCreateInput,
@@ -89,6 +90,13 @@ export class WorkManagementRouter {
 		@Input() input: z.infer<typeof teamMemberDocumentUpdateInput>,
 	) {
 		return this.work.updateDocument(input.id, input.data);
+	}
+
+	@Mutation({ input: teamMemberDocumentFileInput })
+	async attachDocumentFile(
+		@Input() input: z.infer<typeof teamMemberDocumentFileInput>,
+	) {
+		return this.work.attachDocumentFile(input);
 	}
 
 	@Query({ input: reminderListInput })

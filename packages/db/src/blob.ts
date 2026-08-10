@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import {
+	DeleteObjectCommand,
 	GetObjectCommand,
 	PutObjectCommand,
 	S3Client,
@@ -95,6 +96,44 @@ export async function read(key: string): Promise<{
 		};
 	} catch {
 		return null;
+	}
+}
+
+export async function write(
+	key: string,
+	body: Uint8Array,
+	contentType: string,
+): Promise<boolean> {
+	if (!blobEnabled()) return false;
+
+	try {
+		await storageClient().send(
+			new PutObjectCommand({
+				Bucket: process.env.STORAGE_BUCKET,
+				Key: key,
+				Body: body,
+				ContentType: contentType,
+			}),
+		);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+export async function remove(key: string): Promise<boolean> {
+	if (!blobEnabled()) return false;
+
+	try {
+		await storageClient().send(
+			new DeleteObjectCommand({
+				Bucket: process.env.STORAGE_BUCKET,
+				Key: key,
+			}),
+		);
+		return true;
+	} catch {
+		return false;
 	}
 }
 

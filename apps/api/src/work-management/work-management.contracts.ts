@@ -106,6 +106,18 @@ export const teamMemberDocumentUpdateInput = z.object({
 	data: teamMemberDocumentCreateInput.partial(),
 });
 
+export const teamMemberDocumentFileInput = z.object({
+	id: z.string().min(1),
+	fileKey: z.string().startsWith("team-documents/").max(500),
+	fileName: z.string().trim().min(1).max(240),
+	fileType: z.string().trim().min(1).max(120),
+	fileSize: z
+		.number()
+		.int()
+		.positive()
+		.max(10 * 1024 * 1024),
+});
+
 export const reminderListInput = z.object({
 	teamMemberId: z.string().min(1).optional(),
 	status: reminderStatus.optional(),

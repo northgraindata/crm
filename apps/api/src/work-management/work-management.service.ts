@@ -16,6 +16,7 @@ import type {
 	payrollSummaryInput,
 	reminderListInput,
 	teamMemberDocumentCreateInput,
+	teamMemberDocumentFileInput,
 	teamMemberDocumentUpdateInput,
 	timeEntryCreateInput,
 	timeEntryListInput,
@@ -274,6 +275,23 @@ export class WorkManagementService {
 		return this.document(row);
 	}
 
+	async attachDocumentFile(input: z.infer<typeof teamMemberDocumentFileInput>) {
+		const row = await this.db.teamMemberDocument
+			.update({
+				where: { id: input.id },
+				data: {
+					fileKey: input.fileKey,
+					fileName: input.fileName,
+					fileType: input.fileType,
+					fileSize: input.fileSize,
+				},
+				include: { reminders: true, teamMember: true },
+			})
+			.catch(() => null);
+		if (!row) throw new NotFoundException("Team member document not found.");
+		return this.document(row);
+	}
+
 	async reminders(input: z.infer<typeof reminderListInput>) {
 		const rows = await this.db.teamMemberReminder.findMany({
 			where: {
@@ -340,8 +358,20 @@ export class WorkManagementService {
 		expiresAt: Date | null,
 		reminderDays: number,
 	) {
-		if (!expiresAt) return;
+		if (!expiresAt) {
+			await this.db.teamMemberReminder.deleteMany({
+				where: { documentId, status: ReminderStatus.PENDING },
+			});
+			return;
+		}
 		const dueAt = new Date(expiresAt.getTime() - reminderDays * 86400000);
+		await this.db.teamMemberReminder.deleteMany({
+			where: {
+				documentId,
+				status: ReminderStatus.PENDING,
+				dueAt: { not: dueAt },
+			},
+		});
 		await Promise.all(
 			[ReminderChannel.CRM, ReminderChannel.EMAIL].map((channel) =>
 				this.db.teamMemberReminder.upsert({
@@ -494,11 +524,17 @@ export class WorkManagementService {
 		expiresAt: Date | null;
 		reminderDays: number;
 		notes: string | null;
+		fileKey: string | null;
+		fileName: string | null;
+		fileType: string | null;
+		fileSize: number | null;
 		teamMember: unknown;
 		reminders: unknown[];
 	}) {
+		const { fileKey, ...document } = row;
 		return {
-			...row,
+			...document,
+			fileUrl: fileKey ? `/team-documents/${row.id}` : null,
 			validFrom: row.validFrom?.toISOString() ?? null,
 			expiresAt: row.expiresAt?.toISOString() ?? null,
 		};

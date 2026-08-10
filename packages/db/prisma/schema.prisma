@@ -1395,6 +1395,10 @@ model TeamMemberDocument {
   expiresAt    DateTime?
   reminderDays Int                      @default(30)
   notes        String?
+  fileKey      String?                  @unique
+  fileName     String?
+  fileType     String?
+  fileSize     Int?
   reminders    TeamMemberReminder[]
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime                 @updatedAt

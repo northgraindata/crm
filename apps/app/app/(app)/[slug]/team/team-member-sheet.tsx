@@ -47,10 +47,12 @@ const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 export function TeamMemberSheet({
 	memberId,
 	month,
+	canUploadDocuments,
 	onOpenChange,
 }: {
 	memberId: string | null;
 	month: string;
+	canUploadDocuments: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
 	const trpc = useTRPC();
@@ -86,6 +88,7 @@ export function TeamMemberSheet({
 						(row) => row.teamMember.id === member.data?.id,
 					)}
 					currency={currency.data?.reportingCurrency ?? "USD"}
+					canUploadDocuments={canUploadDocuments}
 					tab={tab}
 					onTabChange={setTab}
 					onClose={() => onOpenChange(false)}
@@ -126,6 +129,7 @@ function MemberContent({
 	reminders,
 	payroll,
 	currency,
+	canUploadDocuments,
 	tab,
 	onTabChange,
 	onClose,
@@ -135,6 +139,7 @@ function MemberContent({
 	reminders: RouterOutputs["workManagement"]["reminders"];
 	payroll?: { hours: number; cost: number };
 	currency: string;
+	canUploadDocuments: boolean;
 	tab: string;
 	onTabChange: (tab: string) => void;
 	onClose: () => void;
@@ -176,13 +181,18 @@ function MemberContent({
 					{
 						value: "details",
 						label: "Details",
-						content: <MemberDetails member={member} />,
+						content: <MemberDetails member={member} currency={currency} />,
 					},
 					{
 						value: "documents",
 						label: "Documents",
 						count: documents,
-						content: <TeamDocuments memberId={member.id} />,
+						content: (
+							<TeamDocuments
+								memberId={member.id}
+								canUpload={canUploadDocuments}
+							/>
+						),
 					},
 					{
 						value: "reminders",
@@ -198,7 +208,13 @@ function MemberContent({
 	);
 }
 
-function MemberDetails({ member }: { member: TeamMember }) {
+function MemberDetails({
+	member,
+	currency,
+}: {
+	member: TeamMember;
+	currency: string;
+}) {
 	const trpc = useTRPC();
 	const cache = useCrmCache();
 	const update = useMutation(
@@ -217,6 +233,7 @@ function MemberDetails({ member }: { member: TeamMember }) {
 				<TeamMemberForm
 					formId={`edit-team-member-${member.id}`}
 					initialValue={member}
+					currency={currency}
 					onSubmit={(value) => update.mutate({ id: member.id, data: value })}
 				/>
 				<div className="flex justify-end pt-4">

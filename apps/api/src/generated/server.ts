@@ -29,7 +29,7 @@ import { microsoftConnectionInput, setOutlookAutoCreateInput } from "../microsof
 import { setAgentModelInput, setResearchKeyInput } from "../settings/settings.contracts";
 import { ssoProviderListInput, registerSsoProviderInput, deleteSsoProviderInput } from "../sso/sso.contracts";
 import { surveyListInput, surveyResponseListInput, surveyResponseIdInput } from "../surveys/surveys.contracts";
-import { workTaskListInput, workTaskCreateInput, workTaskUpdateInput, workTaskMoveInput, timeEntryListInput, timeEntryCreateInput, timerInput, timeEntryIdInput, payrollSummaryInput, teamMemberDocumentCreateInput, teamMemberDocumentListInput, teamMemberDocumentUpdateInput, reminderListInput, reminderIdInput } from "../work-management/work-management.contracts";
+import { workTaskListInput, workTaskCreateInput, workTaskUpdateInput, workTaskMoveInput, timeEntryListInput, timeEntryCreateInput, timerInput, timeEntryIdInput, payrollSummaryInput, teamMemberDocumentCreateInput, teamMemberDocumentListInput, teamMemberDocumentUpdateInput, teamMemberDocumentFileInput, reminderListInput, reminderIdInput } from "../work-management/work-management.contracts";
 import { memberListInput, updateWorkspaceInput, setMemberRoleInput } from "../workspace/workspace.contracts";
 import { zohoConnectionInput, setZohoAutoCreateInput } from "../zoho/zoho.contracts";
 import type { ActivitiesRouter } from "../activities/activities.router";
@@ -490,6 +490,9 @@ const appRouter = t.router({
     updateDocument: publicProcedure
       .input(teamMemberDocumentUpdateInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["updateDocument"]>>),
+    attachDocumentFile: publicProcedure
+      .input(teamMemberDocumentFileInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["attachDocumentFile"]>>),
     reminders: publicProcedure
       .input(reminderListInput)
       .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<WorkManagementRouter["reminders"]>>),

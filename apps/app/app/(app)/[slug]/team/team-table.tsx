@@ -147,7 +147,13 @@ function columns(
 	];
 }
 
-export function TeamTable({ month }: { month: string }) {
+export function TeamTable({
+	month,
+	canUploadDocuments,
+}: {
+	month: string;
+	canUploadDocuments: boolean;
+}) {
 	const trpc = useTRPC();
 	const { query, input } = useTableQuery(teamSearchParams);
 	const [memberId, setMemberId] = useQueryState("member", parseAsString);
@@ -209,6 +215,7 @@ export function TeamTable({ month }: { month: string }) {
 				key={memberId ?? "closed"}
 				memberId={memberId}
 				month={month}
+				canUploadDocuments={canUploadDocuments}
 				onOpenChange={(open) => {
 					if (!open) void setMemberId(null);
 				}}

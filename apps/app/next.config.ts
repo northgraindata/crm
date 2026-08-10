@@ -3,9 +3,7 @@ import type { NextConfig } from "next";
 
 loadRootEnv();
 
-const apiUrl =
-	process.env.API_URL ??
-	"http://localhost:3001";
+const apiUrl = process.env.API_URL ?? "http://localhost:3001";
 
 const publicApiUrl =
 	process.env.NEXT_PUBLIC_API_URL ?? process.env.APP_URL ?? apiUrl;
@@ -22,6 +20,11 @@ const allowedDevOrigins = (process.env.APP_URL ?? "")
 
 const nextConfig: NextConfig = {
 	allowedDevOrigins,
+	experimental: {
+		serverActions: {
+			bodySizeLimit: "12mb",
+		},
+	},
 
 	env: {
 		NEXT_PUBLIC_API_URL: publicApiUrl,

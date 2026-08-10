@@ -1,3 +1,4 @@
+import { blobEnabled } from "@crm/db/blob";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import {
@@ -68,7 +69,7 @@ async function Team({
 
 	return (
 		<HydrateClient>
-			<TeamTable month={month} />
+			<TeamTable month={month} canUploadDocuments={blobEnabled()} />
 		</HydrateClient>
 	);
 }
