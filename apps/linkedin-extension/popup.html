@@ -3,42 +3,17 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Add to Northgrain</title>
+    <title>CRM connection</title>
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
     <main>
-      <h1>Add to Northgrain</h1>
-      <p class="hint">Profiles now have an Add to Northgrain button. This form remains available as a manual fallback.</p>
-      <form id="capture-form">
+      <h1>CRM connection</h1>
+      <p class="hint">Configure the connection once, then use Add to CRM on any LinkedIn profile.</p>
+      <form id="connection-form">
         <label>CRM API URL<input id="api-url" type="url" placeholder="https://crm.example.com" required></label>
         <label>API token<input id="token" type="password" placeholder="crm_pat_…" required></label>
-        <label>First name<input id="first-name" required></label>
-        <label>Last name<input id="last-name"></label>
-        <label>Title<input id="title"></label>
-        <label>Company<input id="company-name"></label>
-        <label>Company domain<input id="company-domain" placeholder="example.com"></label>
-        <label>Why are you adding them?
-          <select id="reason" required>
-            <option>Potential client</option>
-            <option>Partner</option>
-            <option>Recruiter</option>
-            <option>Relationship</option>
-            <option>Other</option>
-          </select>
-        </label>
-        <label>Connection status
-          <select id="connection-status">
-            <option value="unknown">Unknown</option>
-            <option value="invited_by_us">Invited by us</option>
-            <option value="invited_us">Invited us</option>
-            <option value="connected">Connected</option>
-            <option value="not_connected">Not connected</option>
-          </select>
-        </label>
-        <label class="check"><input id="inbound" type="checkbox"> This person invited me</label>
-        <label class="check"><input id="follow-up" type="checkbox" checked> Create a follow-up task</label>
-        <button type="submit">Save to Northgrain</button>
+        <button type="submit">Save connection</button>
       </form>
       <p id="status" role="status"></p>
     </main>
