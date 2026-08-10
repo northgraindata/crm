@@ -343,6 +343,15 @@ function ContactOverview({ contact }: { contact: Contact }) {
 						onSave={(title) => save({ title })}
 						{...agentProps("title")}
 					/>
+					<InlineSelectField
+						label="Status"
+						value={contact.status}
+						options={[
+							{ value: "TO_CONTACT", label: "To contact" },
+							{ value: "CONTACTED", label: "Contacted" },
+						]}
+						onSave={(status) => save({ status })}
+					/>
 					<InlineField
 						label="Email"
 						value={contact.email}
