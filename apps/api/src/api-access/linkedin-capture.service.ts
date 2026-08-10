@@ -28,7 +28,9 @@ export class LinkedInCaptureService {
 			? await this.fields.valuesFor("CONTACT", existing.id)
 			: {};
 
-		const companyId = await this.companyId(input);
+		const companyId = input.companyName
+			? await this.companyId(input)
+			: (existing?.companyId ?? null);
 		const contact = existing
 			? await this.contacts.update(existing.id, {
 					firstName: input.firstName,
@@ -165,6 +167,8 @@ function contactFields(input: LinkedInCaptureInput) {
 		linkedin_connection_status: input.connectionStatus ?? "Unknown",
 		...(input.reason ? { relationship_role: roleForReason(input.reason) } : {}),
 		...(input.connectedAt ? { linkedin_connected_at: input.connectedAt } : {}),
+		...(input.headline ? { linkedin_headline: input.headline } : {}),
+		...(input.location ? { linkedin_location: input.location } : {}),
 	};
 }
 

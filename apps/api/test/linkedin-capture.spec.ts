@@ -1,6 +1,12 @@
 import { describe, expect, it } from "bun:test";
+import { Test } from "@nestjs/testing";
+import { AgentTriggerService } from "../src/agent/agent-trigger.service";
 import { linkedinCaptureInput } from "../src/api-access/linkedin-capture.contracts";
 import { LinkedInCaptureService } from "../src/api-access/linkedin-capture.service";
+import { CompaniesService } from "../src/companies/companies.service";
+import { ContactsService } from "../src/contacts/contacts.service";
+import { DATABASE } from "../src/database/database.constants";
+import { FieldsService } from "../src/fields/fields.service";
 
 const capture = {
 	profileUrl: "https://www.linkedin.com/in/jane-doe",
@@ -26,6 +32,85 @@ describe("LinkedIn capture", () => {
 			linkedinCaptureInput.parse({ ...capture, email: "jane@example.com" })
 				.email,
 		).toBe("jane@example.com");
+	});
+
+	it("creates and links a company while preserving LinkedIn profile fields", async () => {
+		const companyCreates: Record<string, unknown>[] = [];
+		const companyUpdates: Record<string, unknown>[] = [];
+		const contactCreates: Record<string, unknown>[] = [];
+		const contactUpdates: Record<string, unknown>[] = [];
+		const module = await Test.createTestingModule({
+			providers: [
+				LinkedInCaptureService,
+				{
+					provide: DATABASE,
+					useValue: {
+						contact: { findFirst: async () => null },
+						company: { findFirst: async () => null },
+						activity: { findFirst: async () => null },
+					},
+				},
+				{
+					provide: CompaniesService,
+					useValue: {
+						create: async (input: Record<string, unknown>) => {
+							companyCreates.push(input);
+							return { id: "company-1" };
+						},
+						update: async (_id: string, input: Record<string, unknown>) => {
+							companyUpdates.push(input);
+						},
+					},
+				},
+				{
+					provide: ContactsService,
+					useValue: {
+						create: async (input: Record<string, unknown>) => {
+							contactCreates.push(input);
+							return { id: "contact-1" };
+						},
+						update: async (_id: string, input: Record<string, unknown>) => {
+							contactUpdates.push(input);
+							return { id: "contact-1" };
+						},
+					},
+				},
+				{
+					provide: FieldsService,
+					useValue: { valuesFor: async () => ({}) },
+				},
+				{
+					provide: AgentTriggerService,
+					useValue: { backfill: async () => undefined },
+				},
+			],
+		}).compile();
+
+		await module.get(LinkedInCaptureService).capture(
+			linkedinCaptureInput.parse({
+				...capture,
+				title: "Data Engineer II",
+				headline: "Data Engineer II | GCP | Apache Beam",
+				location: "Pune Division, Maharashtra, India",
+				companyName: "Infocusp Innovations",
+				companyLinkedInUrl:
+					"https://www.linkedin.com/company/infocusp-innovations/",
+			}),
+			"user-1",
+		);
+
+		expect(companyCreates).toEqual([
+			{ name: "Infocusp Innovations", domain: undefined },
+		]);
+		expect(companyUpdates[0]?.linkedinUrl).toBe(
+			"https://www.linkedin.com/company/infocusp-innovations/",
+		);
+		expect(contactCreates[0]?.companyId).toBe("company-1");
+		expect(contactCreates[0]?.title).toBe("Data Engineer II");
+		expect(contactUpdates[0]?.fields).toMatchObject({
+			linkedin_headline: "Data Engineer II | GCP | Apache Beam",
+			linkedin_location: "Pune Division, Maharashtra, India",
+		});
 	});
 
 	it("does not create a task just because the connection became connected", async () => {

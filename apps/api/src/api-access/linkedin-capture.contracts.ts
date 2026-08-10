@@ -6,6 +6,8 @@ export const linkedinCaptureInput = z.object({
 	lastName: z.string().trim().optional(),
 	email: z.email("That is not an email address.").optional(),
 	title: z.string().trim().optional(),
+	headline: z.string().trim().max(500).optional(),
+	location: z.string().trim().max(250).optional(),
 	imageUrl: z.string().url().optional(),
 	companyName: z.string().trim().optional(),
 	companyDomain: z.string().trim().optional(),

@@ -92,7 +92,11 @@
 
 	function profileSection() {
 		const heading = profileHeading();
+		const topCard = [
+			...document.querySelectorAll('section[componentkey$="Topcard"]'),
+		].find((section) => section.contains(heading));
 		return (
+			topCard ??
 			heading?.closest("section") ??
 			heading?.parentElement?.parentElement ??
 			document.querySelector("main")
@@ -103,21 +107,112 @@
 		return (section?.innerText ?? "").split(/\n+/).map(clean).filter(Boolean);
 	}
 
+	function uniqueLines(elements) {
+		return [...elements]
+			.map(visibleText)
+			.filter((line, index, lines) => line && lines.indexOf(line) === index);
+	}
+
+	function isProfileMetadata(line) {
+		return (
+			/^·?\s*(?:1st|2nd|3rd)\s*$/i.test(line) ||
+			line === "·" ||
+			/^(?:contact info|informacje kontaktowe)$/i.test(line) ||
+			/^\d[\d,.\s]*\+?\s*(?:followers?|connections?|obserwujących|kontaktów)$/i.test(
+				line,
+			) ||
+			/\bmutual connection\b|\bwspóln(?:y|a) kontakt\b/i.test(line) ||
+			/^profile enhanced with premium$/i.test(line)
+		);
+	}
+
+	function topCardLines(section) {
+		return uniqueLines(section?.querySelectorAll("p") ?? []).filter(
+			(line) => !isProfileMetadata(line),
+		);
+	}
+
+	function profileHeadline(section) {
+		return topCardLines(section)[0] ?? "";
+	}
+
 	function currentExperience() {
-		const section = document.querySelector("[id*='ExperienceTopLevelSection']");
+		const anchor = document.querySelector(
+			"[id*='ExperienceTopLevelSection'], #experience",
+		);
+		const section = anchor?.closest("section") ?? anchor;
 		const details = [
 			...(section?.querySelectorAll("a > div > div > div") ?? []),
 		].find((element) => element.querySelectorAll(":scope > p").length >= 2);
-		const lines = [...(details?.querySelectorAll(":scope > p") ?? [])]
+		const detailsLines = [...(details?.querySelectorAll(":scope > p") ?? [])]
 			.map((element) => clean(element.textContent))
 			.filter(Boolean);
+		const item = section?.querySelector("li");
+		const itemLines = [
+			...(item?.querySelectorAll('span[aria-hidden="true"]') ?? []),
+		]
+			.map(visibleText)
+			.filter((line, index, lines) => line && lines.indexOf(line) === index);
+		const lines = detailsLines.length >= 2 ? detailsLines : itemLines;
 		return {
 			title: lines[0] ?? "",
 			companyName: clean(lines[1]?.split(/\s*\u00b7\s*/)[0]),
 		};
 	}
 
+	function profileCompany(section, experience, headline) {
+		const companyControl = section
+			?.querySelector('svg[id^="company-accent-"]')
+			?.closest('[role="button"], a, button');
+		const companyFromControl = clean(companyControl?.innerText)
+			.split(/\n+/)
+			.map(clean)
+			.find(Boolean);
+		const labelledCompany = section?.querySelector(
+			'[aria-label^="current company:" i], [aria-label^="company:" i]',
+		);
+		const companyFromLabel = clean(labelledCompany?.getAttribute("aria-label"))
+			.replace(/^(?:current company|company):\s*/i, "")
+			.split(/\.\s*(?:click|select|kliknij)\b/i)[0];
+		const lines = topCardLines(section);
+		const summary = lines.find(
+			(line) =>
+				line !== headline &&
+				line.includes("·") &&
+				(!companyFromControl || line.startsWith(companyFromControl)),
+		);
+		const companyFromSummary = clean(summary?.split(/\s*·\s*/)[0]);
+		const companyName =
+			companyFromControl ||
+			companyFromLabel ||
+			companyFromSummary ||
+			experience.companyName;
+		const companyLink = [
+			...(companyControl?.matches('a[href*="/company/"]')
+				? [companyControl]
+				: []),
+			...(companyControl?.querySelectorAll('a[href*="/company/"]') ?? []),
+			...(section?.querySelectorAll('a[href*="/company/"]') ?? []),
+		].find((link) => !companyName || visibleText(link) === companyName);
+		return {
+			name: companyName,
+			linkedinUrl: companyLink?.href || undefined,
+			summary,
+		};
+	}
+
+	function profileLocation(section, companySummary) {
+		if (!companySummary) return "";
+		const lines = topCardLines(section);
+		const index = lines.indexOf(companySummary);
+		return index < 0 ? "" : (lines[index + 1] ?? "");
+	}
+
 	function profileTitle() {
+		const section = profileSection();
+		const headline = profileHeadline(section);
+		if (headline) return clean(headline.split(/\s*[|｜]\s*/)[0]);
+
 		const experience = currentExperience();
 		return experience.title;
 	}
@@ -142,25 +237,21 @@
 		const section = profileSection();
 		const nameText = profileName();
 		const name = personName(nameText);
+		const headline = profileHeadline(section);
 		const title = profileTitle();
 		const experience = currentExperience();
-		const companyButton = section?.querySelector(
-			'button[aria-label*="company" i], button[aria-label*="current" i]',
-		);
-		const companyName =
-			experience.companyName ||
-			clean(companyButton?.getAttribute("aria-label"))
-				.replace(/^current company:\s*/i, "")
-				.replace(/^company:\s*/i, "") ||
-			visibleText(section?.querySelector('a[href*="/company/"]'));
+		const company = profileCompany(section, experience, headline);
 		const image = section?.querySelector(
-			"img.pv-top-card-profile-picture__image, img[alt*='profile photo' i]",
+			'[componentkey="topcard-logo-image-referencekey"] img, [aria-label="Profile photo"] img, img.pv-top-card-profile-picture__image, img[alt*="profile photo" i]',
 		);
 		return {
 			profileUrl: canonicalProfileUrl(location.href),
 			...name,
 			title,
-			companyName,
+			headline: headline || undefined,
+			location: profileLocation(section, company.summary) || undefined,
+			companyName: company.name,
+			companyLinkedInUrl: company.linkedinUrl,
 			email: profileEmail(section) || undefined,
 			imageUrl: image?.currentSrc || image?.src || undefined,
 			reason: "Potential client",
