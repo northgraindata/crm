@@ -19,12 +19,12 @@ export function LinkedinExtension() {
 			<CardContent className="flex flex-col gap-4">
 				<div className="flex flex-wrap items-center gap-3">
 					<Button asChild>
-						<a href="/downloads/northgrain-linkedin-chrome.zip" download>
+						<a href="/extension-downloads/chrome" download>
 							Download Chrome extension
 						</a>
 					</Button>
 					<Button asChild variant="outline">
-						<a href="/downloads/northgrain-linkedin-safari.zip" download>
+						<a href="/extension-downloads/safari" download>
 							Download Safari extension
 						</a>
 					</Button>

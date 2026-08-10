@@ -73,7 +73,8 @@ function isUnder(pathname: string, prefix: string): boolean {
 function isPublic(pathname: string): boolean {
 	return (
 		(pathname === LANDING_PATH && isMarketing()) ||
-		isUnder(pathname, "/downloads")
+		isUnder(pathname, "/downloads") ||
+		isUnder(pathname, "/extension-downloads")
 	);
 }
 
