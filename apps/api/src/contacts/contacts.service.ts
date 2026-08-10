@@ -1,5 +1,6 @@
 import {
 	type ContactBriefSections,
+	ContactStatus,
 	type Db,
 	type FactEvidence,
 	FactStatus,
@@ -75,6 +76,7 @@ export type ContactRow = {
 	email: string | null;
 	title: string | null;
 	imageUrl: string | null;
+	status: ContactStatus;
 	company: {
 		id: string;
 		name: string;
@@ -102,6 +104,7 @@ const SORTABLE: Record<
 	name: (dir) => [{ lastName: dir }, { firstName: dir }],
 	email: (dir) => [{ email: dir }],
 	title: (dir) => [{ title: dir }, { lastName: "asc" }],
+	status: (dir) => [{ status: dir }, { lastName: "asc" }],
 	company: (dir) => [{ company: { name: dir } }, { lastName: "asc" }],
 	createdAt: (dir) => [{ createdAt: dir }],
 	owner: (dir) => [{ owner: { name: dir } }, { lastName: "asc" }],
@@ -138,6 +141,7 @@ export class ContactsService {
 					email: true,
 					title: true,
 					imageUrl: true,
+					status: true,
 					source: true,
 					company: { select: COMPANY_SELECT },
 					owner: { select: OWNER_SELECT },
@@ -180,6 +184,7 @@ export class ContactsService {
 				twitterUrl: true,
 				githubUrl: true,
 				imageUrl: true,
+				status: true,
 				enrichmentStatus: true,
 				enrichmentError: true,
 				createdAt: true,
@@ -305,8 +310,10 @@ export class ContactsService {
 					email,
 					phone: blankToNull(input.phone ?? ""),
 					title: blankToNull(input.title ?? ""),
+					imageUrl: input.imageUrl ?? null,
 					companyId,
 					ownerId: input.ownerId ?? null,
+					status: input.status ?? ContactStatus.CONTACTED,
 				},
 				select: { id: true, firstName: true, lastName: true },
 			});
@@ -383,6 +390,7 @@ export class ContactsService {
 		if (input.email !== undefined) data.email = normalizeEmail(input.email);
 		if (input.phone !== undefined) data.phone = blankToNull(input.phone);
 		if (input.title !== undefined) data.title = blankToNull(input.title);
+		if (input.imageUrl !== undefined) data.imageUrl = input.imageUrl;
 		if (input.linkedinUrl !== undefined) {
 			data.linkedinUrl = blankToNull(input.linkedinUrl);
 		}
@@ -402,6 +410,7 @@ export class ContactsService {
 				? { connect: { id: input.ownerId } }
 				: { disconnect: true };
 		}
+		if (input.status !== undefined) data.status = input.status;
 
 		try {
 			return await this.db.$transaction(async (tx) => {
@@ -697,6 +706,9 @@ export class ContactsService {
 		if (input.source !== FACET_ALL) {
 			where.source = input.source as RecordSource;
 		}
+		if (input.status !== FACET_ALL) {
+			where.status = input.status as ContactStatus;
+		}
 
 		return where;
 	}
@@ -704,7 +716,7 @@ export class ContactsService {
 	private async facetCounts(input: ContactListInput) {
 		const where = this.searchFilter(input.q);
 
-		const [owners, companies, sources] = await Promise.all([
+		const [owners, companies, sources, statuses] = await Promise.all([
 			this.db.contact.groupBy({
 				by: ["ownerId"],
 				where,
@@ -720,12 +732,18 @@ export class ContactsService {
 				where,
 				_count: { _all: true },
 			}),
+			this.db.contact.groupBy({
+				by: ["status"],
+				where,
+				_count: { _all: true },
+			}),
 		]);
 
 		return {
 			owner: countsByKey(owners, "ownerId", FACET_UNASSIGNED),
 			company: countsByKey(companies, "companyId", NO_COMPANY),
 			source: countsByKey(sources, "source"),
+			status: countsByKey(statuses, "status"),
 		};
 	}
 
