@@ -264,31 +264,46 @@
 	function invitationDetails(button) {
 		const card =
 			button.closest('[data-view-name*="invitation"]') ??
+			button.closest('[role="listitem"][componentkey^="urn:li:invitation:"]') ??
+			button.closest('[role="listitem"]') ??
 			button.closest("li") ??
 			button.parentElement?.parentElement;
-		const profileLink = [
+		const profileLinks = [
 			...(card?.querySelectorAll('a[href*="/in/"]') ?? []),
-		].find((link) => canonicalProfileUrl(link.href));
-		const visibleName =
-			visibleText(profileLink?.querySelector('span[aria-hidden="true"]')) ||
-			visibleText(profileLink);
+		].filter((link) => canonicalProfileUrl(link.href));
+		const namedProfile = profileLinks
+			.map((link) => ({
+				link,
+				name: [
+					visibleText(link.querySelector("strong")),
+					visibleText(link.querySelector('span[aria-hidden="true"]')),
+					visibleText(link),
+				]
+					.map((value) => clean(value).replace(/\s+wants to connect$/i, ""))
+					.find(isPersonName),
+			}))
+			.find((entry) => entry.name);
+		const profileLink = namedProfile?.link ?? profileLinks[0];
+		const visibleName = namedProfile?.name ?? "";
 		const labelledName = clean(profileLink?.getAttribute("aria-label"))
 			.replace(/^View\s+/i, "")
 			.replace(/(?:’s|'s) profile$/i, "");
 		const nameText = visibleName || labelledName;
 		const name = personName(nameText.replace(/^View\s+/i, ""));
-		const lines = (card?.innerText ?? "")
-			.split(/\n+/)
-			.map(clean)
-			.filter(Boolean);
-		const title = lines.find(
+		const lines = uniqueLines(card?.querySelectorAll("p") ?? []);
+		const headline = lines.find(
 			(line) =>
-				line !== nameText && !/accept|ignore|mutual|connection/i.test(line),
+				line !== nameText &&
+				!line.includes(nameText) &&
+				!/accept|ignore|mutual|connection|wants to connect/i.test(line),
 		);
+		const image = card?.querySelector('a[href*="/in/"] img');
 		return {
 			profileUrl: canonicalProfileUrl(profileLink?.href ?? ""),
 			...name,
-			title: title ?? "",
+			title: clean(headline?.split(/\s*[|｜]\s*/)[0]),
+			headline: headline || undefined,
+			imageUrl: image?.currentSrc || image?.src || undefined,
 			companyName: "",
 			reason: "Relationship",
 			inbound: true,
