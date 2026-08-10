@@ -13,8 +13,7 @@ export function LinkedinExtension() {
 			<CardHeader>
 				<CardTitle>LinkedIn extension</CardTitle>
 				<CardDescription>
-					Save visible LinkedIn profile details to Northgrain after reviewing
-					them.
+					Add LinkedIn profiles to CRM in one click.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="flex flex-col gap-4">
@@ -37,8 +36,8 @@ export function LinkedinExtension() {
 					<p className="font-medium">Chrome</p>
 					<p className="text-muted-foreground">
 						Unzip the Chrome package, open chrome://extensions, enable Developer
-						mode, and choose Load unpacked. Refresh LinkedIn, then use Add to
-						Northgrain beside a profile&apos;s actions.
+						mode, and choose Load unpacked. Reload the extension, refresh
+						LinkedIn, then use Add to CRM on a profile.
 					</p>
 					<p className="font-medium">Safari</p>
 					<p className="text-muted-foreground">
