@@ -2,8 +2,9 @@
 	"manifest_version": 3,
 	"name": "Northgrain CRM",
 	"description": "Capture LinkedIn relationships into Northgrain CRM with manual confirmation.",
-	"version": "0.3.0",
-	"permissions": ["activeTab", "storage"],
+	"version": "1.4.0",
+	"key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvszAbSEBoUDiYGa5wtXep58xQ20axCvuk4iT2XQYoJAPYIDJDNEFLtj5NkDOpVsy/ZJljYZg4RirRRJDk1R7x5jpSlmetdd8jojI5xo7EDGkQZLcGAVeu0W+4QwPZF6GN87M1d5lkAbuYQAs5FQiXqXDyi/Qu5TmFo9KQp02xEE4cSUYqvSjegDBv0WWPUMYTjMSkx09FPU181UIDxnXrmDPFLt6eHg4SWBitHNPadglqPcOOPaGjIQ5RQej7lTW8PRSz8Voj5BTqIBY0X0z8iMQ/xMGwPnlTmG8RlBpJ7hNi2uHL70xeZ3jYesabJnveEqoKvE2khWC1UbCjDGVawIDAQAB",
+	"permissions": ["activeTab", "alarms", "storage", "tabs"],
 	"host_permissions": ["http://localhost:3001/*", "https://*/*"],
 	"background": {
 		"service_worker": "background.js"
@@ -11,7 +12,7 @@
 	"content_scripts": [
 		{
 			"matches": ["https://*.linkedin.com/*"],
-			"js": ["content.js"],
+			"js": ["shared.js", "content.js"],
 			"run_at": "document_idle"
 		}
 	],

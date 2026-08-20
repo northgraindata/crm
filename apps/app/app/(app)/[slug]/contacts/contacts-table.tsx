@@ -20,6 +20,10 @@ import { useOpenRecord } from "@/components/crm/record-sheet/record-stack";
 import { ListSearch } from "@/components/data-table/list-search";
 import { useTableQuery } from "@/components/data-table/use-table-query";
 import { LocalRelativeTime } from "@/components/local-date-time";
+import {
+	CONTACT_STATUS_OPTIONS,
+	contactStatusPresentation,
+} from "@/lib/contact-status";
 import { useTRPC } from "@/lib/trpc/client";
 import type { RouterOutputs } from "@/lib/trpc/types";
 import { ContactsBulkActions } from "./contacts-bulk-actions";
@@ -51,13 +55,16 @@ const COLUMNS: DataTableColumn<ContactRow>[] = [
 		header: "Status",
 		sortable: true,
 		width: "w-[14%]",
-		cell: (row) => (
-			<StatusIndicator
-				tone={row.status === "TO_CONTACT" ? "warning" : "success"}
-				label={row.status === "TO_CONTACT" ? "To contact" : "Contacted"}
-				size="sm"
-			/>
-		),
+		cell: (row) => {
+			const status = contactStatusPresentation(row.status);
+			return (
+				<StatusIndicator
+					tone={status?.tone}
+					label={status?.label ?? row.status}
+					size="sm"
+				/>
+			);
+		},
 	},
 	{
 		id: "title",
@@ -168,10 +175,9 @@ export function ContactsTable() {
 		{
 			id: "status",
 			label: "Status",
-			options: [
-				{ value: "TO_CONTACT", label: "To contact" },
-				{ value: "CONTACTED", label: "Contacted" },
-			].filter((option) => (facetCounts?.status?.[option.value] ?? 0) > 0),
+			options: CONTACT_STATUS_OPTIONS.filter(
+				(option) => (facetCounts?.status?.[option.value] ?? 0) > 0,
+			),
 		},
 		{
 			id: "company",

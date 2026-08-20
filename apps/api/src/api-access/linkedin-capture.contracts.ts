@@ -11,6 +11,7 @@ export const linkedinCaptureInput = z.object({
 	imageUrl: z.string().url().optional(),
 	companyName: z.string().trim().optional(),
 	companyDomain: z.string().trim().optional(),
+	companyWebsite: z.string().url().optional(),
 	companyLinkedInUrl: z.string().url().optional(),
 	reason: z.enum([
 		"Potential client",

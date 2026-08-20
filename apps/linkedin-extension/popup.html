@@ -9,15 +9,22 @@
   <body>
     <main>
       <h1>CRM connection</h1>
-      <p class="hint">Configure the connection once, then use Add to CRM on any LinkedIn profile.</p>
+			<p class="hint">Capture the current profile or manage people waiting for review and sync.</p>
+			<button id="capture-current" type="button">Review current profile</button>
+			<section aria-labelledby="queue-title">
+				<h2 id="queue-title">Capture queue</h2>
+				<div id="queue"></div>
+			</section>
       <form id="connection-form">
+				<h2>CRM connection</h2>
         <label>CRM API URL<input id="api-url" type="url" placeholder="https://crm.example.com" required></label>
         <label>API token<input id="token" type="password" placeholder="crm_pat_…" required></label>
-        <button type="submit">Save connection</button>
+				<button type="submit">Save and test connection</button>
       </form>
       <p id="status" role="status"></p>
     </main>
     <script src="config.js"></script>
+		<script src="shared.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

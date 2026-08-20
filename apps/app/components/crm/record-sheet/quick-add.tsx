@@ -7,6 +7,7 @@ import { Input } from "@crm/ui/components/input";
 import {
 	Select,
 	SelectContent,
+	SelectGroup,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
@@ -154,11 +155,9 @@ export function QuickAddContact({
 
 export function AttachDealContact({
 	dealId,
-	companyName,
 	onDone,
 }: {
 	dealId: string;
-	companyName: string;
 	onDone: () => void;
 }) {
 	const trpc = useTRPC();
@@ -196,7 +195,7 @@ export function AttachDealContact({
 	const placeholder = options.isPending
 		? "Loading…"
 		: nobody
-			? `Everybody at ${companyName} is already on it`
+			? "Everybody at the companies on this deal is already on it"
 			: "Choose somebody";
 
 	return (
@@ -216,12 +215,15 @@ export function AttachDealContact({
 						<SelectValue placeholder={placeholder} />
 					</SelectTrigger>
 					<SelectContent>
-						{candidates.map((candidate) => (
-							<SelectItem key={candidate.id} value={candidate.id}>
-								{contactName(candidate)}
-								{candidate.title ? ` · ${candidate.title}` : ""}
-							</SelectItem>
-						))}
+						<SelectGroup>
+							{candidates.map((candidate) => (
+								<SelectItem key={candidate.id} value={candidate.id}>
+									{contactName(candidate)}
+									{candidate.company ? ` · ${candidate.company.name}` : ""}
+									{candidate.title ? ` · ${candidate.title}` : ""}
+								</SelectItem>
+							))}
+						</SelectGroup>
 					</SelectContent>
 				</Select>
 			</Field>
@@ -234,6 +236,99 @@ export function AttachDealContact({
 					placeholder="Champion"
 					autoComplete="off"
 				/>
+			</Field>
+		</QuickAddForm>
+	);
+}
+
+export function AttachDealCompany({
+	dealId,
+	onDone,
+}: {
+	dealId: string;
+	onDone: () => void;
+}) {
+	const trpc = useTRPC();
+	const cache = useCrmCache();
+
+	const [companyId, setCompanyId] = useState("");
+	const [role, setRole] = useState<"END_CLIENT" | "ASSOCIATED">("END_CLIENT");
+
+	const companyIdField = useId();
+	const roleId = useId();
+
+	const options = useQuery(
+		trpc.deals.companyOptions.queryOptions({ dealId, q: "" }),
+	);
+	const candidates = options.data ?? [];
+
+	const attach = useMutation(
+		trpc.deals.attachCompany.mutationOptions({
+			onSuccess: async (attached) => {
+				const company = candidates.find(
+					(candidate) => candidate.id === attached.companyId,
+				);
+				await cache.deal(dealId);
+				toast.success(
+					company ? `${company.name} is on the deal.` : "Company added.",
+				);
+				onDone();
+			},
+			onError: (error) => toast.error(error.message),
+		}),
+	);
+
+	const nobody = !options.isPending && candidates.length === 0;
+
+	return (
+		<QuickAddForm
+			submitLabel="Add company"
+			pending={attach.isPending}
+			ready={companyId !== ""}
+			onCancel={onDone}
+			onSubmit={() => attach.mutate({ dealId, companyId, role })}
+		>
+			<Field>
+				<FieldLabel htmlFor={companyIdField}>Company</FieldLabel>
+				<Select value={companyId} onValueChange={setCompanyId}>
+					<SelectTrigger
+						id={companyIdField}
+						className="w-full"
+						disabled={nobody}
+					>
+						<SelectValue
+							placeholder={options.isPending ? "Loading…" : "Choose company"}
+						/>
+					</SelectTrigger>
+					<SelectContent>
+						<SelectGroup>
+							{candidates.map((company) => (
+								<SelectItem key={company.id} value={company.id}>
+									{company.name}
+								</SelectItem>
+							))}
+						</SelectGroup>
+					</SelectContent>
+				</Select>
+			</Field>
+			<Field>
+				<FieldLabel htmlFor={roleId}>Relationship</FieldLabel>
+				<Select
+					value={role}
+					onValueChange={(value) =>
+						setRole(value as "END_CLIENT" | "ASSOCIATED")
+					}
+				>
+					<SelectTrigger id={roleId} className="w-full">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectGroup>
+							<SelectItem value="END_CLIENT">End client</SelectItem>
+							<SelectItem value="ASSOCIATED">Associated</SelectItem>
+						</SelectGroup>
+					</SelectContent>
+				</Select>
 			</Field>
 		</QuickAddForm>
 	);

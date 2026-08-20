@@ -1,5 +1,11 @@
 {
 	"name": "@crm/linkedin-extension",
 	"version": "0.0.1",
-	"private": true
+	"private": true,
+	"scripts": {
+		"test": "bun test"
+	},
+	"devDependencies": {
+		"linkedom": "^0.18.13"
+	}
 }

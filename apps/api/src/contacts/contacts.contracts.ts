@@ -3,13 +3,27 @@ import { bulkIdsInput } from "../crm/bulk";
 import { recordFieldValues } from "../fields/fields.contracts";
 import { listInput } from "../trpc/list-input";
 
-export const contactStatus = z.enum(["TO_CONTACT", "CONTACTED"]);
+export const contactStatus = z.enum([
+	"TO_RESEARCH",
+	"READY_TO_CONTACT",
+	"CONTACTED_AWAITING_REPLY",
+	"ACTIVE_CONVERSATION",
+	"FOLLOW_UP_DUE",
+	"NURTURE",
+	"CLOSED_IRRELEVANT",
+]);
 
 export const contactListInput = listInput.extend({
 	owner: z.string().default("all"),
 	company: z.string().default("all"),
 	source: z.string().default("all"),
-	status: z.string().default("all"),
+	status: z
+		.string()
+		.refine(
+			(status) => status === "all" || contactStatus.safeParse(status).success,
+			"Choose a valid contact status.",
+		)
+		.default("all"),
 });
 
 export type ContactListInput = z.infer<typeof contactListInput>;

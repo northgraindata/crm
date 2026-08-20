@@ -6,6 +6,12 @@ import { strToU8, zipSync } from "fflate";
 type ArchiveFiles = Record<string, Uint8Array>;
 
 const LOCAL_API_URL = "http://localhost:3001";
+const EXCLUDED_ENTRIES = new Set([
+	"node_modules",
+	"package.json",
+	"README.md",
+	"test",
+]);
 
 export function linkedinExtensionApiUrl({
 	nodeEnvironment,
@@ -26,6 +32,8 @@ async function archiveFiles(
 	const files: ArchiveFiles = {};
 
 	for (const entry of await readdir(directory, { withFileTypes: true })) {
+		if (directory === root && EXCLUDED_ENTRIES.has(entry.name)) continue;
+		if (entry.isSymbolicLink()) continue;
 		const path = join(directory, entry.name);
 
 		if (entry.isDirectory()) {
@@ -43,12 +51,25 @@ export async function packageLinkedinExtension({
 	sourceDirectory,
 	outputDirectory,
 	apiUrl,
+	version,
 }: {
 	sourceDirectory: string;
 	outputDirectory: string;
 	apiUrl: string;
+	version?: string;
 }): Promise<void> {
 	const files = await archiveFiles(sourceDirectory);
+	const manifest = files["manifest.json"];
+	if (!manifest) throw new Error("LinkedIn extension manifest is missing.");
+	if (version) {
+		const parsedManifest = JSON.parse(
+			new TextDecoder().decode(manifest),
+		) as Record<string, unknown>;
+		parsedManifest.version = version;
+		files["manifest.json"] = strToU8(
+			`${JSON.stringify(parsedManifest, null, "\t")}\n`,
+		);
+	}
 	files["config.js"] = strToU8(
 		`globalThis.NORTHGRAIN_EXTENSION_CONFIG = { apiUrl: ${JSON.stringify(apiUrl)} };\n`,
 	);
@@ -74,11 +95,15 @@ if (import.meta.main) {
 		nodeEnvironment: process.env.NODE_ENV,
 		publicApiUrl: process.env.PUBLIC_API_URL,
 	});
+	const rootPackage = JSON.parse(
+		await readFile(resolve(import.meta.dir, "../../../package.json"), "utf8"),
+	) as { version: string };
 
 	await packageLinkedinExtension({
 		sourceDirectory,
 		outputDirectory,
 		apiUrl,
+		version: rootPackage.version,
 	});
 
 	process.stdout.write(`Packaged ${basename(sourceDirectory)} for ${apiUrl}\n`);

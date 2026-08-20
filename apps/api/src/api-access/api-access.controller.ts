@@ -72,7 +72,14 @@ export class ApiAccessController {
 			where: { id: principal.userId },
 			select: { id: true, name: true, email: true },
 		});
-		return { user, token: { id: principal.tokenId, scopes: principal.scopes } };
+		return {
+			user,
+			token: {
+				id: principal.tokenId,
+				scopes: principal.scopes,
+				expiresAt: principal.expiresAt,
+			},
+		};
 	}
 
 	@Post("linkedin/captures")

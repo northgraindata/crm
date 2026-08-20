@@ -313,7 +313,7 @@ export class ContactsService {
 					imageUrl: input.imageUrl ?? null,
 					companyId,
 					ownerId: input.ownerId ?? null,
-					status: input.status ?? ContactStatus.CONTACTED,
+					status: input.status ?? ContactStatus.TO_RESEARCH,
 				},
 				select: { id: true, firstName: true, lastName: true },
 			});

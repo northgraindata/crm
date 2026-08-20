@@ -11,13 +11,17 @@ import type { z } from "zod";
 import type { AuthedTrpcContext } from "../trpc/context.types";
 import { AuthMiddleware } from "../trpc/middlewares/auth.middleware";
 import {
+	dealAttachCompanyInput,
 	dealAttachContactInput,
 	dealBulkInput,
 	dealBulkOwnerInput,
 	dealBulkStageInput,
+	dealCompanyOptionsInput,
+	dealCompanyRoleInput,
 	dealContactRoleInput,
 	dealContactsInput,
 	dealCreateInput,
+	dealDetachCompanyInput,
 	dealDetachContactInput,
 	dealIdInput,
 	dealListInput,
@@ -67,6 +71,28 @@ export class DealsRouter {
 	@Query({ input: dealContactsInput })
 	async contactOptions(@Input("dealId") dealId: string) {
 		return this.deals.contactOptions(dealId);
+	}
+
+	@Query({ input: dealCompanyOptionsInput })
+	async companyOptions(
+		@Input() input: z.infer<typeof dealCompanyOptionsInput>,
+	) {
+		return this.deals.companyOptions(input.dealId, input.q);
+	}
+
+	@Mutation({ input: dealAttachCompanyInput })
+	async attachCompany(@Input() input: z.infer<typeof dealAttachCompanyInput>) {
+		return this.deals.attachCompany(input);
+	}
+
+	@Mutation({ input: dealDetachCompanyInput })
+	async detachCompany(@Input() input: z.infer<typeof dealDetachCompanyInput>) {
+		return this.deals.detachCompany(input);
+	}
+
+	@Mutation({ input: dealCompanyRoleInput })
+	async setCompanyRole(@Input() input: z.infer<typeof dealCompanyRoleInput>) {
+		return this.deals.setCompanyRole(input);
 	}
 
 	@Mutation({ input: dealAttachContactInput })

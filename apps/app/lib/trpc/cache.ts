@@ -174,6 +174,7 @@ export function useCrmCache(): CrmCache {
 				[id ? trpc.deals.byId.queryKey({ id }) : trpc.deals.byId.queryKey()],
 				[
 					...listKeys(),
+					trpc.deals.companyOptions.queryKey(),
 					trpc.deals.contactOptions.queryKey(),
 					trpc.companies.byId.queryKey(),
 					trpc.contacts.byId.queryKey(),

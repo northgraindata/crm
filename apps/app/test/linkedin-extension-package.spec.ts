@@ -46,6 +46,7 @@ describe("packageLinkedinExtension", () => {
 		await mkdir(sourceDirectory);
 		await writeFile(join(sourceDirectory, "manifest.json"), '{"version":"1"}');
 		await writeFile(join(sourceDirectory, "config.js"), "local config");
+		await writeFile(join(sourceDirectory, "package.json"), "{}");
 
 		await packageLinkedinExtension({
 			sourceDirectory,
@@ -70,6 +71,33 @@ describe("packageLinkedinExtension", () => {
 			expect(strFromU8(config)).toBe(
 				'globalThis.NORTHGRAIN_EXTENSION_CONFIG = { apiUrl: "https://crm.example.com" };\n',
 			);
+			expect(archive["package.json"]).toBeUndefined();
 		}
+	});
+
+	it("stamps the application version into packaged manifests", async () => {
+		const root = await mkdtemp(join(tmpdir(), "crm-linkedin-extension-"));
+		temporaryDirectories.push(root);
+
+		const sourceDirectory = join(root, "source");
+		const outputDirectory = join(root, "downloads");
+		await mkdir(sourceDirectory);
+		await writeFile(join(sourceDirectory, "manifest.json"), '{"version":"1"}');
+
+		await packageLinkedinExtension({
+			sourceDirectory,
+			outputDirectory,
+			apiUrl: "https://crm.example.com",
+			version: "2.3.4",
+		});
+
+		const archive = unzipSync(
+			new Uint8Array(
+				await readFile(join(outputDirectory, "northgrain-linkedin-chrome.zip")),
+			),
+		);
+		const manifest = archive["manifest.json"];
+		if (!manifest) throw new Error("Packaged manifest is missing.");
+		expect(JSON.parse(strFromU8(manifest))).toMatchObject({ version: "2.3.4" });
 	});
 });

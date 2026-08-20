@@ -23,11 +23,6 @@ export function LinkedinExtension() {
 							Download Chrome extension
 						</a>
 					</Button>
-					<Button asChild variant="outline">
-						<a href="/extension-downloads/safari" download>
-							Download Safari extension
-						</a>
-					</Button>
 					<span className="text-muted-foreground text-sm">
 						Configured for this CRM workspace
 					</span>
@@ -37,19 +32,13 @@ export function LinkedinExtension() {
 					<p className="text-muted-foreground">
 						Unzip the Chrome package, open chrome://extensions, enable Developer
 						mode, and choose Load unpacked. Reload the extension, refresh
-						LinkedIn, then use Add to CRM on a profile.
-					</p>
-					<p className="font-medium">Safari</p>
-					<p className="text-muted-foreground">
-						Unzip the Safari package, create a Safari Web Extension target in
-						Xcode, and select the extracted folder as its source. Safari
-						requires the Xcode wrapper before it can be installed in Safari.
+						LinkedIn, then use Review in Northgrain on a profile.
 					</p>
 					<p className="text-muted-foreground text-xs">
 						The package includes this CRM&apos;s public API URL. The extension
-						stores your API token locally in the browser. Accepting a LinkedIn
-						invitation also opens a confirmation with an optional message
-						follow-up task.
+						stores your API token and capture queue locally in Chrome. Reload
+						the unpacked extension when a new version is available; pending
+						drafts remain available after an upgrade.
 					</p>
 				</div>
 			</CardContent>

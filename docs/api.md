@@ -140,12 +140,12 @@ External integrations use the versioned REST surface at `/api/v1/*`. Create a
 personal access token in Settings → API access, then send it as
 `Authorization: Bearer crm_pat_…`.
 
-- `GET /api/v1/me` returns the token owner.
+- `GET /api/v1/me` returns the token owner, scopes, and token expiry.
 - `GET|POST|PATCH|DELETE /api/v1/companies` and `/api/v1/companies/:id` manage companies.
 - `GET|POST|PATCH|DELETE /api/v1/contacts` and `/api/v1/contacts/:id` manage contacts.
 - `GET|POST|PATCH|DELETE /api/v1/deals` and `/api/v1/deals/:id` manage deals.
 - `GET|POST /api/v1/activities` and `PATCH /api/v1/activities/:id` manage timeline tasks and activities.
-- `POST /api/v1/linkedin/captures` upserts a manually confirmed LinkedIn relationship, creates a Company when needed, and queues agent triage.
+- `POST /api/v1/linkedin/captures` atomically upserts a manually confirmed LinkedIn relationship by its lowercase `/in/:slug` identity, creates a Company when needed, deduplicates open LinkedIn follow-ups, and queues agent triage after the write.
 - `POST /api/v1/surveys/responses` accepts idempotent, incremental survey events; `GET /api/v1/surveys`, `GET /api/v1/surveys/responses`, and `GET /api/v1/surveys/responses/:id` expose survey progress and analysis.
 - `crm:read` permits reads; `crm:write` permits reads and writes.
 
@@ -211,14 +211,21 @@ comma-separated `APP_URL` allow-list. Server-to-server clients do not need CORS.
 
 ## People on a deal
 
-`DealContact` is the join, and `deals.attachContact` / `detachContact` /
-`setContactRole` are the only ways to write it. `deals.contactOptions` is what the
-picker reads.
+`DealContact` is the people join. `DealCompany` adds optional companies with an
+`END_CLIENT` or `ASSOCIATED` role while `Deal.companyId` remains the contracting
+company. The corresponding `deals.attach*` / `detach*` / `set*Role` procedures are
+the only ways to write either join; the option queries are what the pickers read.
 
-- **A contact on a deal works at that deal's company**, enforced in the service and
-  not merely by the picker — the same rule as `companies.setPrimaryContact`.
-- **Attaching is an upsert and re-attaching keeps the role already there**, so a
-  double click cannot blank what somebody typed.
+- **A contact on a deal works at its contracting or associated company**, enforced
+  in the service and not merely by the picker. A person's employer remains their
+  real `Contact.companyId`; never move them to the contracting company as a shortcut.
+- **Detaching an associated company also detaches its people from that deal**, never
+  from the CRM. Changing the contracting company retains the old company as
+  `ASSOCIATED` when its people are still on the deal.
+- **The contracting company cannot also be associated.** Promoting an associated
+  company to contracting removes its join row inside the deal update transaction.
+- **Attaching a contact is an upsert and re-attaching keeps the role already
+  there**, so a double click cannot blank what somebody typed.
 - **Detaching removes the row, never the contact.** They stay in the CRM, on the
   company, with their history.
 - **`role` is blanked to null, never stored as `""`** — `blankToNull`, as everywhere

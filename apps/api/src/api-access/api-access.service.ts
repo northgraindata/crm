@@ -136,7 +136,12 @@ export class ApiAccessService {
 			})
 			.catch(() => undefined);
 
-		return { tokenId: token.id, userId: token.userId, scopes: token.scopes };
+		return {
+			tokenId: token.id,
+			userId: token.userId,
+			scopes: token.scopes,
+			expiresAt: token.expiresAt?.toISOString() ?? null,
+		};
 	}
 }
 

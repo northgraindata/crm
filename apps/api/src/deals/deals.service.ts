@@ -1,6 +1,7 @@
 import {
 	ActivityType,
 	type Db,
+	DealCompanyRole,
 	type DealStage,
 	type Prisma,
 	Prisma as PrismaNamespace,
@@ -42,11 +43,14 @@ import {
 } from "../trpc/list-input";
 import type {
 	ClosingWindow,
+	DealAttachCompanyInput,
 	DealAttachContactInput,
 	DealBulkOwnerInput,
 	DealBulkStageInput,
+	DealCompanyRoleInput,
 	DealContactRoleInput,
 	DealCreateInput,
+	DealDetachCompanyInput,
 	DealDetachContactInput,
 	DealListInput,
 	DealUpdateInput,
@@ -78,6 +82,7 @@ const CONTACT_SELECT = {
 	email: true,
 	title: true,
 	imageUrl: true,
+	company: { select: { id: true, name: true } },
 } as const;
 
 const LOSING = new Set<DealStage>(LOSING_DEAL_STAGES);
@@ -207,6 +212,10 @@ export class DealsService {
 					select: { role: true, contact: { select: CONTACT_SELECT } },
 					orderBy: { contact: { firstName: "asc" } },
 				},
+				companies: {
+					select: { role: true, company: { select: COMPANY_SELECT } },
+					orderBy: { company: { name: "asc" } },
+				},
 			},
 		});
 
@@ -214,7 +223,15 @@ export class DealsService {
 			throw new NotFoundException(`No deal with id ${id}.`);
 		}
 
-		const { contacts, amount, baseAmount, fxRate, fxRateAt, ...rest } = deal;
+		const {
+			contacts,
+			companies,
+			amount,
+			baseAmount,
+			fxRate,
+			fxRateAt,
+			...rest
+		} = deal;
 
 		return {
 			...rest,
@@ -229,6 +246,7 @@ export class DealsService {
 			closedAt: deal.closedAt?.toISOString() ?? null,
 			createdAt: deal.createdAt.toISOString(),
 			contacts: contacts.map(({ role, contact }) => ({ ...contact, role })),
+			companies: companies.map(({ role, company }) => ({ ...company, role })),
 		};
 	}
 
@@ -318,6 +336,49 @@ export class DealsService {
 
 		try {
 			return await this.db.$transaction(async (tx) => {
+				if (input.companyId !== undefined) {
+					const current = await tx.deal.findUnique({
+						where: { id },
+						select: {
+							companyId: true,
+							contacts: {
+								select: { contact: { select: { companyId: true } } },
+							},
+						},
+					});
+
+					if (!current) {
+						throw new NotFoundException(`No deal with id ${id}.`);
+					}
+
+					if (current.companyId !== input.companyId) {
+						await tx.dealCompany.deleteMany({
+							where: { dealId: id, companyId: input.companyId },
+						});
+
+						if (
+							current.contacts.some(
+								({ contact }) => contact.companyId === current.companyId,
+							)
+						) {
+							await tx.dealCompany.upsert({
+								where: {
+									dealId_companyId: {
+										dealId: id,
+										companyId: current.companyId,
+									},
+								},
+								create: {
+									dealId: id,
+									companyId: current.companyId,
+									role: DealCompanyRole.ASSOCIATED,
+								},
+								update: {},
+							});
+						}
+					}
+				}
+
 				if (input.fields) {
 					await this.fields.applyValues(tx, "DEAL", id, input.fields);
 				}
@@ -427,18 +488,11 @@ export class DealsService {
 	}
 
 	async contactOptions(dealId: string) {
-		const deal = await this.db.deal.findUnique({
-			where: { id: dealId },
-			select: { companyId: true, contacts: { select: { contactId: true } } },
-		});
-
-		if (!deal) {
-			throw new NotFoundException(`No deal with id ${dealId}.`);
-		}
+		const deal = await this.companiesOf(dealId);
 
 		return this.db.contact.findMany({
 			where: {
-				companyId: deal.companyId,
+				companyId: { in: deal.companyIds },
 				id: { notIn: deal.contacts.map((row) => row.contactId) },
 			},
 			select: CONTACT_SELECT,
@@ -447,8 +501,132 @@ export class DealsService {
 		});
 	}
 
+	async companyOptions(dealId: string, q: string) {
+		const deal = await this.companiesOf(dealId);
+		const term = q.trim();
+
+		return this.db.company.findMany({
+			where: {
+				id: { notIn: deal.companyIds },
+				...(term
+					? { name: { contains: term, mode: "insensitive" as const } }
+					: {}),
+			},
+			select: COMPANY_SELECT,
+			orderBy: { name: "asc" },
+			take: 100,
+		});
+	}
+
+	async attachCompany(input: DealAttachCompanyInput) {
+		const [deal, company] = await Promise.all([
+			this.db.deal.findUnique({
+				where: { id: input.dealId },
+				select: { companyId: true },
+			}),
+			this.db.company.findUnique({
+				where: { id: input.companyId },
+				select: { id: true },
+			}),
+		]);
+
+		if (!deal) {
+			throw new NotFoundException(`No deal with id ${input.dealId}.`);
+		}
+		if (!company) {
+			throw new NotFoundException(`No company with id ${input.companyId}.`);
+		}
+		if (deal.companyId === input.companyId) {
+			throw new BadRequestException(
+				"The contracting company is already on this deal.",
+			);
+		}
+
+		await this.db.dealCompany.upsert({
+			where: {
+				dealId_companyId: {
+					dealId: input.dealId,
+					companyId: input.companyId,
+				},
+			},
+			create: input,
+			update: { role: input.role },
+		});
+
+		this.logger.log({
+			message: "Company attached to deal",
+			dealId: input.dealId,
+			companyId: input.companyId,
+			role: input.role,
+		});
+
+		return input;
+	}
+
+	async detachCompany(input: DealDetachCompanyInput) {
+		const removed = await this.db.$transaction(async (tx) => {
+			const associated = await tx.dealCompany.findUnique({
+				where: {
+					dealId_companyId: {
+						dealId: input.dealId,
+						companyId: input.companyId,
+					},
+				},
+				select: { company: { select: { name: true } } },
+			});
+
+			if (!associated) {
+				throw new NotFoundException("That company is not on this deal.");
+			}
+
+			const contacts = await tx.dealContact.deleteMany({
+				where: {
+					dealId: input.dealId,
+					contact: { companyId: input.companyId },
+				},
+			});
+
+			await tx.dealCompany.delete({
+				where: {
+					dealId_companyId: {
+						dealId: input.dealId,
+						companyId: input.companyId,
+					},
+				},
+			});
+
+			return {
+				...input,
+				companyName: associated.company.name,
+				detachedContacts: contacts.count,
+			};
+		});
+
+		this.logger.log({
+			message: "Company detached from deal",
+			dealId: input.dealId,
+			companyId: input.companyId,
+			detachedContacts: removed.detachedContacts,
+		});
+
+		return removed;
+	}
+
+	async setCompanyRole(input: DealCompanyRoleInput) {
+		const { count } = await this.db.dealCompany.updateMany({
+			where: { dealId: input.dealId, companyId: input.companyId },
+			data: { role: input.role },
+		});
+
+		if (count === 0) {
+			throw new NotFoundException("That company is not on this deal.");
+		}
+
+		return input;
+	}
+
 	async attachContact(input: DealAttachContactInput) {
-		const company = await this.companyOf(input.dealId);
+		const companies = await this.companiesOf(input.dealId);
 		const contact = await this.db.contact.findUnique({
 			where: { id: input.contactId },
 			select: { companyId: true },
@@ -458,9 +636,12 @@ export class DealsService {
 			throw new NotFoundException(`No contact with id ${input.contactId}.`);
 		}
 
-		if (contact.companyId !== company.id) {
+		if (
+			!contact.companyId ||
+			!companies.companyIds.includes(contact.companyId)
+		) {
 			throw new BadRequestException(
-				`That contact does not work at ${company.name}.`,
+				"That contact does not work at a company on this deal.",
 			);
 		}
 
@@ -563,17 +744,27 @@ export class DealsService {
 		return runBulk(ids, (id) => this.delete(id));
 	}
 
-	private async companyOf(dealId: string) {
+	private async companiesOf(dealId: string) {
 		const deal = await this.db.deal.findUnique({
 			where: { id: dealId },
-			select: { company: { select: { id: true, name: true } } },
+			select: {
+				companyId: true,
+				companies: { select: { companyId: true } },
+				contacts: { select: { contactId: true } },
+			},
 		});
 
 		if (!deal) {
 			throw new NotFoundException(`No deal with id ${dealId}.`);
 		}
 
-		return deal.company;
+		return {
+			companyIds: [
+				deal.companyId,
+				...deal.companies.map((company) => company.companyId),
+			],
+			contacts: deal.contacts,
+		};
 	}
 
 	private searchFilter(q: string): Prisma.DealWhereInput {
@@ -584,6 +775,13 @@ export class DealsService {
 			OR: [
 				{ name: { contains: term, mode: "insensitive" } },
 				{ company: { name: { contains: term, mode: "insensitive" } } },
+				{
+					companies: {
+						some: {
+							company: { name: { contains: term, mode: "insensitive" } },
+						},
+					},
+				},
 			],
 		};
 	}

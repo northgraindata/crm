@@ -18,6 +18,7 @@ const deals = new DealsService(
 );
 
 let companyId: string;
+let otherCompanyId: string;
 let dealId: string;
 let championId: string;
 let colleagueId: string;
@@ -56,6 +57,7 @@ beforeAll(async () => {
 		data: { name: `Other Co ${suffix}`, domain: otherDomain },
 		select: { id: true },
 	});
+	otherCompanyId = other.id;
 
 	const champion = await db.contact.create({
 		data: { firstName: "Ada", lastName: "Champion", companyId },
@@ -127,7 +129,7 @@ describe("bringing a contact onto a deal", () => {
 	it("refuses somebody who works somewhere else", async () => {
 		await expect(
 			deals.attachContact({ dealId, contactId: outsiderId }),
-		).rejects.toThrow(`That contact does not work at People Co ${suffix}.`);
+		).rejects.toThrow("That contact does not work at a company on this deal.");
 	});
 
 	it("blanks a role rather than storing an empty string", async () => {
@@ -161,5 +163,62 @@ describe("bringing a contact onto a deal", () => {
 		await expect(
 			deals.detachContact({ dealId, contactId: championId }),
 		).rejects.toThrow("That contact is not on this deal.");
+	});
+
+	it("associates an end client and offers its people", async () => {
+		await deals.attachCompany({
+			dealId,
+			companyId: otherCompanyId,
+			role: "END_CLIENT",
+		});
+
+		const [deal, options] = await Promise.all([
+			deals.byId(dealId),
+			deals.contactOptions(dealId),
+		]);
+
+		expect(deal.companies).toHaveLength(1);
+		expect(deal.companies[0]?.id).toBe(otherCompanyId);
+		expect(deal.companies[0]?.role).toBe("END_CLIENT");
+		expect(options.map((option) => option.id)).toContain(outsiderId);
+	});
+
+	it("attaches somebody from an associated company", async () => {
+		await deals.attachContact({
+			dealId,
+			contactId: outsiderId,
+			role: "Hiring manager",
+		});
+
+		const deal = await deals.byId(dealId);
+
+		expect(deal.contacts[0]?.id).toBe(outsiderId);
+		expect(deal.contacts[0]?.company?.id).toBe(otherCompanyId);
+	});
+
+	it("changes an associated company's role", async () => {
+		await deals.setCompanyRole({
+			dealId,
+			companyId: otherCompanyId,
+			role: "ASSOCIATED",
+		});
+
+		const deal = await deals.byId(dealId);
+
+		expect(deal.companies[0]?.role).toBe("ASSOCIATED");
+	});
+
+	it("detaches a company and its people from the deal but not the CRM", async () => {
+		const removed = await deals.detachCompany({
+			dealId,
+			companyId: otherCompanyId,
+		});
+
+		const deal = await deals.byId(dealId);
+
+		expect(removed.detachedContacts).toBe(1);
+		expect(deal.companies).toHaveLength(0);
+		expect(deal.contacts).toHaveLength(0);
+		expect(await db.contact.count({ where: { id: outsiderId } })).toBe(1);
 	});
 });

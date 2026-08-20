@@ -3,7 +3,7 @@
 	font-family: system-ui, sans-serif;
 }
 body {
-	width: 340px;
+	width: 360px;
 	margin: 0;
 	color: #1b1d1c;
 	background: #fff;
@@ -15,6 +15,10 @@ h1 {
 	margin: 0 0 6px;
 	font-size: 18px;
 }
+h2 {
+	margin: 18px 0 8px;
+	font-size: 14px;
+}
 .hint {
 	margin: 0 0 16px;
 	color: #5b625f;
@@ -24,6 +28,29 @@ h1 {
 form {
 	display: grid;
 	gap: 12px;
+}
+#queue {
+	display: grid;
+	gap: 8px;
+}
+.queue-item {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 4px 8px;
+	align-items: center;
+	border: 1px solid #d6d6d6;
+	border-radius: 8px;
+	padding: 9px 10px;
+}
+.queue-item strong,
+.queue-item span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.queue-item span {
+	color: #666;
+	font-size: 12px;
 }
 label {
 	display: grid;
@@ -40,6 +67,12 @@ button {
 	border-radius: 5px;
 	padding: 8px 10px;
 	font: inherit;
+}
+.queue-item button {
+	grid-column: 2;
+	grid-row: 1 / span 2;
+	min-height: 32px;
+	padding: 5px 9px;
 }
 input:focus-visible,
 button:focus-visible {

@@ -13,6 +13,14 @@ import {
 } from "@crm/ui/components/entity-logo";
 import { Icon } from "@crm/ui/components/icon";
 import { PersonAvatar } from "@crm/ui/components/person-avatar";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@crm/ui/components/select";
 import { SimpleTable, SimpleTableRow } from "@crm/ui/components/simple-table";
 import { TableCell } from "@crm/ui/components/table";
 import {
@@ -22,6 +30,7 @@ import {
 } from "@crm/ui/components/tooltip";
 import { formatMoney } from "@crm/ui/lib/format";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AgentPanel } from "@/components/crm/agent-panel";
 import { contactName } from "@/components/crm/contact-name";
@@ -57,7 +66,7 @@ import { savingField } from "@/lib/pending-field";
 import { useCrmCache } from "@/lib/trpc/cache";
 import { useTRPC } from "@/lib/trpc/client";
 import type { RouterOutputs } from "@/lib/trpc/types";
-import { AttachDealContact } from "./quick-add";
+import { AttachDealCompany, AttachDealContact } from "./quick-add";
 import { RecordActions } from "./record-actions";
 import { AddRow, RecordSheetFrame } from "./record-parts";
 import { useOpenRecord, useRecordSheetView } from "./record-stack";
@@ -106,12 +115,30 @@ function ReportedValue({ deal }: { deal: Deal }) {
 }
 
 const CONTACT_COLUMNS = [
-	{ id: "name", header: "Name", width: "w-[28%]", className: "pl-5" },
-	{ id: "role", header: "Role", width: "w-[20%]" },
-	{ id: "title", header: "Title", width: "w-[22%]" },
-	{ id: "email", header: "Email", width: "w-[22%]" },
+	{ id: "name", header: "Name", width: "w-[22%]", className: "pl-5" },
+	{ id: "role", header: "Role", width: "w-[18%]" },
+	{ id: "company", header: "Company", width: "w-[20%]" },
+	{ id: "title", header: "Title", width: "w-[16%]" },
+	{ id: "email", header: "Email", width: "w-[16%]" },
 	{ id: "remove", srLabel: "Remove", width: "w-10" },
 ];
+
+const COMPANY_COLUMNS = [
+	{ id: "company", header: "Company", width: "w-[55%]", className: "pl-5" },
+	{ id: "relationship", header: "Relationship", width: "w-[35%]" },
+	{ id: "remove", srLabel: "Remove", width: "w-10" },
+];
+
+const COMPANY_ROLE_OPTIONS = [
+	{ value: "END_CLIENT", label: "End client" },
+	{ value: "ASSOCIATED", label: "Associated" },
+] as const;
+
+function companyRoleLabel(role: "END_CLIENT" | "ASSOCIATED") {
+	return (
+		COMPANY_ROLE_OPTIONS.find((option) => option.value === role)?.label ?? role
+	);
+}
 
 const DATE_OPTIONS: Intl.DateTimeFormatOptions = {
 	month: "short",
@@ -151,6 +178,12 @@ export function DealSheet({ dealId }: { dealId: string }) {
 							onDone={() => setAdding(null)}
 						/>
 					),
+				},
+				{
+					value: "companies",
+					label: "Companies",
+					count: deal.companies.length + 1,
+					content: <DealCompanies deal={deal} />,
 				},
 				{
 					value: "activity",
@@ -402,7 +435,7 @@ function WhereItStands({ deal }: { deal: Deal }) {
 				<DetailSheetProperty label="On it" wide>
 					{deal.contacts.length === 0 ? (
 						<span className="text-muted-foreground">
-							Nobody from {deal.company.name} is attached yet.
+							Nobody from the companies on this deal is attached yet.
 						</span>
 					) : (
 						<span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
@@ -429,6 +462,154 @@ function WhereItStands({ deal }: { deal: Deal }) {
 				</DetailSheetProperty>
 			</DetailSheetProperties>
 		</DetailSheetSection>
+	);
+}
+
+function DealCompanies({ deal }: { deal: Deal }) {
+	const trpc = useTRPC();
+	const cache = useCrmCache();
+	const openRecord = useOpenRecord();
+	const [adding, setAdding] = useState(false);
+
+	const setRole = useMutation(
+		trpc.deals.setCompanyRole.mutationOptions({
+			onSuccess: () => cache.deal(deal.id, { settle: "record" }),
+			onError: (error) => toast.error(error.message),
+		}),
+	);
+
+	const detach = useMutation(
+		trpc.deals.detachCompany.mutationOptions({
+			onSuccess: async (removed) => {
+				await cache.deal(deal.id, { settle: "record" });
+				toast.success(
+					removed.detachedContacts === 0
+						? `${removed.companyName} is off the deal.`
+						: `${removed.companyName} and ${removed.detachedContacts} ${removed.detachedContacts === 1 ? "contact" : "contacts"} removed from the deal.`,
+				);
+			},
+			onError: (error) => toast.error(error.message),
+		}),
+	);
+
+	return (
+		<>
+			{adding ? (
+				<AttachDealCompany dealId={deal.id} onDone={() => setAdding(false)} />
+			) : null}
+			<SimpleTable variant="panel" columns={COMPANY_COLUMNS}>
+				<SimpleTableRow
+					clickable
+					onClick={() => openRecord({ kind: "company", id: deal.company.id })}
+				>
+					<TableCell className="truncate py-2.5 pr-3 pl-5 font-medium">
+						<span className="flex min-w-0 items-center gap-2">
+							<EntityLogo
+								src={deal.company.iconUrl}
+								darkSrc={deal.company.iconDarkUrl}
+								tone={
+									deal.company.iconTone as EntityLogoTone | null | undefined
+								}
+								name={deal.company.name}
+								size="sm"
+							/>
+							<span className="truncate">{deal.company.name}</span>
+						</span>
+					</TableCell>
+					<TableCell className="truncate px-3 py-2.5 text-muted-foreground">
+						Contracting company
+					</TableCell>
+					<TableCell />
+				</SimpleTableRow>
+
+				{deal.companies.map((company) => (
+					<SimpleTableRow
+						key={company.id}
+						clickable
+						onClick={() => openRecord({ kind: "company", id: company.id })}
+					>
+						<TableCell className="truncate py-2.5 pr-3 pl-5 font-medium">
+							<span className="flex min-w-0 items-center gap-2">
+								<EntityLogo
+									src={company.iconUrl}
+									darkSrc={company.iconDarkUrl}
+									tone={company.iconTone as EntityLogoTone | null | undefined}
+									name={company.name}
+									size="sm"
+								/>
+								<span className="truncate">{company.name}</span>
+							</span>
+						</TableCell>
+						<TableCell
+							className="px-1 py-2.5"
+							onClick={(event) => event.stopPropagation()}
+						>
+							<Select
+								value={company.role}
+								disabled={
+									setRole.isPending &&
+									setRole.variables?.companyId === company.id
+								}
+								onValueChange={(role) =>
+									setRole.mutate({
+										dealId: deal.id,
+										companyId: company.id,
+										role: role as "END_CLIENT" | "ASSOCIATED",
+									})
+								}
+							>
+								<SelectTrigger
+									variant="ghost"
+									className="w-full"
+									aria-label={`Relationship for ${company.name}`}
+								>
+									<SelectValue>{companyRoleLabel(company.role)}</SelectValue>
+								</SelectTrigger>
+								<SelectContent>
+									<SelectGroup>
+										{COMPANY_ROLE_OPTIONS.map((option) => (
+											<SelectItem key={option.value} value={option.value}>
+												{option.label}
+											</SelectItem>
+										))}
+									</SelectGroup>
+								</SelectContent>
+							</Select>
+						</TableCell>
+						<TableCell className="px-3 py-2.5">
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="ghost"
+										size="icon-xs"
+										disabled={detach.isPending}
+										onClick={(event) => {
+											event.stopPropagation();
+											detach.mutate({
+												dealId: deal.id,
+												companyId: company.id,
+											});
+										}}
+									>
+										<Icon icon={Close} />
+										<span className="sr-only">
+											Take {company.name} off this deal
+										</span>
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent>Take off this deal</TooltipContent>
+							</Tooltip>
+						</TableCell>
+					</SimpleTableRow>
+				))}
+
+				<AddRow
+					label="Add company"
+					columns={COMPANY_COLUMNS.length}
+					onClick={() => setAdding(true)}
+				/>
+			</SimpleTable>
+		</>
 	);
 }
 
@@ -462,11 +643,7 @@ function DealContacts({
 	);
 
 	const form = adding ? (
-		<AttachDealContact
-			dealId={deal.id}
-			companyName={deal.company.name}
-			onDone={onDone}
-		/>
+		<AttachDealContact dealId={deal.id} onDone={onDone} />
 	) : null;
 
 	if (deal.contacts.length === 0) {
@@ -477,7 +654,7 @@ function DealContacts({
 					<DetailSheetEmpty
 						icon={UserMultiple}
 						title="No contacts on this deal"
-						description={`Nobody from ${deal.company.name} is attached yet. Bring the people you are selling to onto the deal and it says who to chase.`}
+						description="Nobody from the companies on this deal is attached yet. Add the people involved so it is clear who to chase."
 						action={
 							<Button variant="outline" size="sm" onClick={onAdd}>
 								<Icon icon={Add} data-icon="inline-start" />
@@ -528,6 +705,9 @@ function DealContacts({
 									})
 								}
 							/>
+						</TableCell>
+						<TableCell className="truncate px-3 py-2.5 text-muted-foreground">
+							{contact.company?.name ?? <EmptyCellValue />}
 						</TableCell>
 						<TableCell className="truncate px-3 py-2.5 text-muted-foreground">
 							{contact.title ?? <EmptyCellValue />}

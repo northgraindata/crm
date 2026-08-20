@@ -21,7 +21,7 @@ import { contactListInput, contactIdInput, contactCreateInput, contactUpdateArgs
 import { conversationListInput, builderResourceSearchInput, conversationIdInput, conversationEventsInput, conversationSaveInput, builderConversationCreateInput, builderConversationSubmitInput, builderQuestionResponseInput, builderResponseRatingInput, sharedConversationInput } from "../conversations/conversations.contracts";
 import { setReportingCurrencyInput, setManualRateInput, removeManualRateInput } from "../currency/currency.contracts";
 import { dashboardSummaryInput } from "../dashboard/dashboard.contracts";
-import { dealListInput, dealIdInput, dealCreateInput, dealUpdateArgs, setStageInput, dealContactsInput, dealAttachContactInput, dealDetachContactInput, dealContactRoleInput, dealBulkOwnerInput, dealBulkStageInput, dealBulkInput } from "../deals/deals.contracts";
+import { dealListInput, dealIdInput, dealCreateInput, dealUpdateArgs, setStageInput, dealContactsInput, dealCompanyOptionsInput, dealAttachCompanyInput, dealDetachCompanyInput, dealCompanyRoleInput, dealAttachContactInput, dealDetachContactInput, dealContactRoleInput, dealBulkOwnerInput, dealBulkStageInput, dealBulkInput } from "../deals/deals.contracts";
 import { engagementListInput, engagementIdInput, engagementCreateInput, engagementUpdateArgs, teamMemberListInput, teamMemberIdInput, teamMemberCreateInput, teamMemberUpdateArgs } from "../engagements/engagements.contracts";
 import { fieldListInput, fieldByKeyInput, fieldIdInput, fieldCreateInput, fieldUpdateArgs, fieldReorderInput } from "../fields/fields.contracts";
 import { googleConnectionInput, setAutoCreateInput, suppressDomainInput, threadInput, calendarEventInput } from "../google/google.contracts";
@@ -283,6 +283,18 @@ const appRouter = t.router({
     contactOptions: publicProcedure
       .input(dealContactsInput)
       .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<DealsRouter["contactOptions"]>>),
+    companyOptions: publicProcedure
+      .input(dealCompanyOptionsInput)
+      .query(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<DealsRouter["companyOptions"]>>),
+    attachCompany: publicProcedure
+      .input(dealAttachCompanyInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<DealsRouter["attachCompany"]>>),
+    detachCompany: publicProcedure
+      .input(dealDetachCompanyInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<DealsRouter["detachCompany"]>>),
+    setCompanyRole: publicProcedure
+      .input(dealCompanyRoleInput)
+      .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<DealsRouter["setCompanyRole"]>>),
     attachContact: publicProcedure
       .input(dealAttachContactInput)
       .mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as unknown as Awaited<ReturnType<DealsRouter["attachContact"]>>),

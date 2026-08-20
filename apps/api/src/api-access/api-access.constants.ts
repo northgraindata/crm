@@ -6,4 +6,5 @@ export type ApiTokenPrincipal = {
 	tokenId: string;
 	userId: string;
 	scopes: readonly string[];
+	expiresAt: string | null;
 };

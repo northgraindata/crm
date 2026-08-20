@@ -1,4 +1,4 @@
-import { DealStage } from "@crm/db";
+import { DealCompanyRole, DealStage } from "@crm/db";
 import { z } from "zod";
 import { bulkIdsInput } from "../crm/bulk";
 import { currencyCode } from "../currency/currency.contracts";
@@ -85,6 +85,38 @@ const dealContactRole = z
 	.nullable();
 
 export const dealContactsInput = z.object({ dealId: z.string() });
+
+export const dealCompanyOptionsInput = z.object({
+	dealId: z.string(),
+	q: z.string().default(""),
+});
+
+const dealCompanyRole = z.enum(
+	Object.values(DealCompanyRole) as [DealCompanyRole, ...DealCompanyRole[]],
+);
+
+export const dealAttachCompanyInput = z.object({
+	dealId: z.string(),
+	companyId: z.string().min(1, "Choose a company to associate."),
+	role: dealCompanyRole.default(DealCompanyRole.ASSOCIATED),
+});
+
+export type DealAttachCompanyInput = z.infer<typeof dealAttachCompanyInput>;
+
+export const dealDetachCompanyInput = z.object({
+	dealId: z.string(),
+	companyId: z.string(),
+});
+
+export type DealDetachCompanyInput = z.infer<typeof dealDetachCompanyInput>;
+
+export const dealCompanyRoleInput = z.object({
+	dealId: z.string(),
+	companyId: z.string(),
+	role: dealCompanyRole,
+});
+
+export type DealCompanyRoleInput = z.infer<typeof dealCompanyRoleInput>;
 
 export const dealAttachContactInput = z.object({
 	dealId: z.string(),

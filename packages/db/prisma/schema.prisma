@@ -390,6 +390,7 @@ model Company {
   contacts        Contact[]           @relation("CompanyContacts")
   conversations   AgentConversation[]
   deals           Deal[]
+  associatedDeals DealCompany[]
   engagements     Engagement[]
   surveyResponses SurveyResponse[]
   activities      Activity[]
@@ -423,6 +424,7 @@ model Contact {
   phone       String?
   title       String?
   linkedinUrl String?
+  linkedinKey String? @unique
   twitterUrl  String?
   githubUrl   String?
   imageUrl    String?
@@ -443,8 +445,8 @@ model Contact {
   owner     User?    @relation("ContactOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   primaryOf Company? @relation("PrimaryContact")
 
-  source RecordSource @default(MANUAL)
-  status ContactStatus @default(CONTACTED)
+  source RecordSource  @default(MANUAL)
+  status ContactStatus @default(TO_RESEARCH)
 
   lastActivityAt DateTime?
 
@@ -466,8 +468,13 @@ model Contact {
 }
 
 enum ContactStatus {
-  TO_CONTACT
-  CONTACTED
+  TO_RESEARCH
+  READY_TO_CONTACT
+  CONTACTED_AWAITING_REPLY
+  ACTIVE_CONVERSATION
+  FOLLOW_UP_DUE
+  NURTURE
+  CLOSED_IRRELEVANT
 }
 
 enum FactBand {
@@ -1069,6 +1076,7 @@ model Deal {
   lastActivityAt DateTime?
 
   contacts    DealContact[]
+  companies   DealCompany[]
   engagements Engagement[]
   activities  Activity[]
   fieldValues FieldValue[]
@@ -1116,6 +1124,23 @@ model DealContact {
   @@id([dealId, contactId])
   @@index([contactId])
   @@map("dealContact")
+}
+
+enum DealCompanyRole {
+  END_CLIENT
+  ASSOCIATED
+}
+
+model DealCompany {
+  dealId    String
+  deal      Deal            @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role      DealCompanyRole @default(ASSOCIATED)
+
+  @@id([dealId, companyId])
+  @@index([companyId])
+  @@map("dealCompany")
 }
 
 enum FieldEntity {

@@ -51,6 +51,7 @@ import {
 } from "@/components/detail-sheet";
 import { LocalDateTime, LocalRelativeDate } from "@/components/local-date-time";
 import { factsByField } from "@/lib/contact-facts";
+import { CONTACT_STATUS_OPTIONS } from "@/lib/contact-status";
 import { ENRICHMENT_POLL_MS, isEnriching } from "@/lib/enrichment-status";
 import { savingField } from "@/lib/pending-field";
 import { hasContactLinks } from "@/lib/social-links";
@@ -346,10 +347,7 @@ function ContactOverview({ contact }: { contact: Contact }) {
 					<InlineSelectField
 						label="Status"
 						value={contact.status}
-						options={[
-							{ value: "TO_CONTACT", label: "To contact" },
-							{ value: "CONTACTED", label: "Contacted" },
-						]}
+						options={CONTACT_STATUS_OPTIONS}
 						onSave={(status) => save({ status })}
 					/>
 					<InlineField

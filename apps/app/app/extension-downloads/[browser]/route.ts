@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { strFromU8, unzipSync } from "fflate";
 import { connection } from "next/server";
 
 const DOWNLOADS: Record<string, string> = {
@@ -8,11 +9,32 @@ const DOWNLOADS: Record<string, string> = {
 };
 
 export async function GET(
-	_request: Request,
+	request: Request,
 	{ params }: { params: Promise<{ browser: string }> },
 ) {
 	await connection();
 	const { browser } = await params;
+	if (browser === "metadata") {
+		const archive = await readFile(
+			resolve(
+				process.cwd(),
+				"public",
+				"downloads",
+				"northgrain-linkedin-chrome.zip",
+			),
+		);
+		const manifestFile = unzipSync(new Uint8Array(archive))["manifest.json"];
+		if (!manifestFile) return new Response(null, { status: 404 });
+		const manifest = JSON.parse(strFromU8(manifestFile)) as { version: string };
+		return Response.json(
+			{
+				latestVersion: manifest.version,
+				minimumCompatibleVersion: manifest.version,
+				downloadUrl: new URL("/extension-downloads/chrome", request.url).href,
+			},
+			{ headers: { "Cache-Control": "no-store" } },
+		);
+	}
 	const fileName = DOWNLOADS[browser];
 	if (!fileName) return new Response(null, { status: 404 });
 
